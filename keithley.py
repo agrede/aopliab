@@ -41,6 +41,28 @@ class K2400():
         if (self.output):
             self.inst.write("INIT")
 
+    def read(self):
+        return self.inst.query_ascii_values("DATA?")
+
+    def set_voltage(self, value):
+        if (
+                value is None or
+                self.volt_limits[0] > value or
+                self.volt_limits[1] < value
+        ):
+            self.inst.write("SOUR:VOLT %f" % value)
+
+    def set_current(self, value):
+        if (
+                value is None or
+                self.curr_limits[0] > value or
+                self.curr_limits[1] < value
+        ):
+            self.inst.write("SOUR:CURR %f" % value)
+
+    def measurement(self):
+        return self.inst.query_ascii_values("READ?")
+
     @property
     def current_limit(self):
         return self._curr_limit
@@ -52,7 +74,8 @@ class K2400():
                 self.curr_limits[0] > value or
                 self.curr_limits[1] < value
         ):
-            self._curr_limit = self.inst.query_ascii_values("CURR:PROT:LEV? DEF")
+            self._curr_limit = self.inst.query_ascii_values(
+                "CURR:PROT:LEV? DEF")
         else:
             self._curr_limit = value
 
@@ -67,6 +90,7 @@ class K2400():
                 self.volt_limits[0] > value or
                 self.volt_limits[1] < value
         ):
-            self._volt_limit = self.inst.query_ascii_values("VOLT:PROT:LEV? DEF")
+            self._volt_limit = self.inst.query_ascii_values(
+                "VOLT:PROT:LEV? DEF")
         else:
             self._volt_limit = value
