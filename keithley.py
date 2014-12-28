@@ -94,3 +94,34 @@ class K2400():
                 "VOLT:PROT:LEV? DEF")
         else:
             self._volt_limit = value
+
+
+class K2485:
+    inst = None
+    _curr_limit = 0
+    _integ_time = 0
+
+    def __init__(self, inst):
+        self.inst = inst
+
+    @property
+    def current_limit(self):
+        return self._curr_limit
+
+    @current_limit.setter
+    def current_limit(self, value):
+        pass
+
+    @property
+    def integration_time(self):
+        return self._integ_time
+
+    @integration_time.setter
+    def integration_time(self, value):
+        pass
+
+    def trigger(self):
+        self.inst.write("INIT")
+
+    def read(self):
+        return self.inst.query_ascii_values("DATA?")
