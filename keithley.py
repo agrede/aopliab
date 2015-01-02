@@ -8,7 +8,7 @@ def get_limits(inst, query):
 
 def within_limits(value, limits):
     return (value is not None and limits[0] <= value and limits[1] >= value)
-    
+
 
 class K2400():
     """
@@ -154,11 +154,11 @@ class K2485:
         else:
             self._integ_cycles = self.inst.query_ascii_values("NPLC? DEF")[0]
         self.inst.write("NPLC %f" % self._integ_cycles)
-    
+
     @property
     def range_auto_ulimit(self):
         return self._auto_range_ulimit
-        
+
     @range_auto_ulimit.setter
     def range_auto_ulimit(self, value):
         if (within_limits(value, self.auto_range_ulimits)):
@@ -167,8 +167,8 @@ class K2485:
             self._auto_range_ulimit = self.inst.query_ascii_values(
                 "RANG:AUTO:ULIM? DEF")[0]
         self.inst.write("RANG:AUTO:ULIM %f" % self._auto_range_ulimit)
-                
-    @property 
+
+    @property
     def range_auto_llimit(self):
         return self._auto_range_llimit
 
@@ -186,6 +186,6 @@ class K2485:
 
     def read(self):
         return [float(x) for x in re.split("A?,", self.inst.query("DATA?"))]
-        
+
     def measurement(self):
         return [float(x) for x in re.split("A?,", self.inst.query("READ?"))]
