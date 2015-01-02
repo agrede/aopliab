@@ -6,6 +6,7 @@ def get_limits(inst, query):
         inst.query_ascii_values(query+"? MIN")[0],
         inst.query_ascii_values(query+"? MAX")[0]]
 
+
 def within_limits(value, limits):
     return (value is not None and limits[0] <= value and limits[1] >= value)
 
@@ -110,7 +111,7 @@ class K2400():
         self.inst.write("VOLT:PROT %f" % self._volt_limit)
 
 
-class K2485:
+class K6485:
     inst = None
     auto_range_ulimits = [0.0, 2.1e-2]
     auto_range_llimits = [0.0, 2.1e-2]

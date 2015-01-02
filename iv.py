@@ -1,5 +1,5 @@
 import visa
-from keithley import K2400, K2485
+from keithley import K2400, K6485
 
 
 def ivmeasure(voltages, current_limit, address):
@@ -36,7 +36,7 @@ def phoivmeasure(voltages, current_limit, photo_current_limit,
     inst1 = rm.open_resource(address1)
     inst2 = rm.open_resource(address2)
     smu = K2400(inst1)
-    pam = K2485(inst2)
+    pam = K6485(inst2)
     # Set compliance levels
     smu.current_limit = current_limit
     pam.auto_range_ulimit = photo_current_limit
