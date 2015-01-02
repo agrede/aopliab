@@ -39,7 +39,9 @@ def phoivmeasure(voltages, current_limit, photo_current_limit,
     pam = K2485(inst2)
     # Set compliance levels
     smu.current_limit = current_limit
-    pam.current_limit = photo_current_limit
+    pam.auto_range_ulimit = photo_current_limit
+    # Zero-check pam
+    pam.zero_check()
     # Set Initial voltage and turn on output
     smu.set_voltage(voltages[0])
     smu.output = True
@@ -55,7 +57,7 @@ def phoivmeasure(voltages, current_limit, photo_current_limit,
         # Save measurments
         meas_volt.append(meas1[0])
         meas_curr.append(meas1[1])
-        meas_phot.append(meas2[1])
+        meas_phot.append(meas2[0])
     # Turn off output and close connections
     smu.output = False
     inst1.close()
