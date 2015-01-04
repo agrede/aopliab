@@ -243,12 +243,21 @@ class K6485:
 
     def trigger(self):
         self.inst.write("INIT")
+        self._triggered = True
 
     def read(self):
-        return [float(x) for x in re.split("A?,", self.inst.query("DATA?"))]
+        if (self._triggered):
+            self.inst.wait_for_srq()
+            self._triggered = False
+        data = [
+            float(x) for x in re.split("A?,", self.inst.query("TRAC:DATA?"))]
+        self.inst.query("STAT:MEAS?")
+        self.inst.write("TRAC:CLE; TRAC:FEED:CONT:NEXT")
+        return data
 
     def measurement(self):
-        return [float(x) for x in re.split("A?,", self.inst.query("READ?"))]
+        self.trigger()
+        return self.read()
 
     @property
     def trigger_count(self):
