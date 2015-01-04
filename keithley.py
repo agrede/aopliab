@@ -30,10 +30,15 @@ class K2400():
     _integ_cycles = 1.0
     _line_freq = 60.0
     _count = 1
+    _triggered = False
 
     def __init__(self, inst):
         self.inst = inst
         self.inst.write("*RST; *CLS")
+        self.inst.write("STAT:MEAS:ENAB 512; *SRE 1")
+        self.inst.write("TRAC:FEED:SENS; TRAC:FEED:CONT NEXT")
+        self.inst.write("FUNC:CONC ON")
+        self.inst.write("FUNC 'VOLT', 'CURR'")
         self.curr_limits = get_limits(inst, "CURR:PROT:LEV")
         self.volt_limits = get_limits(inst, "VOLT:PROT:LEV")
         self.delay_limits = get_limits(inst, "TRIG:DEL")
@@ -44,8 +49,6 @@ class K2400():
         self.voltage_limit = None
         self.delay_limit = None
         self.trigger_count = None
-        self.inst.write("FUNC:CONC ON")
-        self.inst.write("FUNC 'VOLT', 'CURR'")
 
     @property
     def output(self):
@@ -63,9 +66,16 @@ class K2400():
     def trigger(self):
         if (self.output):
             self.inst.write("INIT")
+            self._triggered = True
 
     def read(self):
-        return self.inst.query_ascii_values("DATA?")
+        if (self._triggered):
+            self.inst.wait_for_srq()
+            self._triggered = False
+        data = self.inst.query_ascii_values("TRAC:DATA?")
+        self.inst.query("STAT:MEAS?")
+        self.inst.write("TRAC:CLE; TRAC:FEED:CONT:NEXT")
+        return data
 
     def set_voltage(self, value):
         if (within_limits(value, self.volt_limits)):
@@ -76,7 +86,8 @@ class K2400():
             self.inst.write("SOUR:CURR %f" % value)
 
     def measurement(self):
-        return self.inst.query_ascii_values("READ?")
+        self.trigger()
+        return self.read()
 
     @property
     def current_limit(self):
@@ -153,22 +164,33 @@ class K6485:
     auto_range_ulimits = [0.0, 2.1e-2]
     auto_range_llimits = [0.0, 2.1e-2]
     integ_cycles_limits = [0.01, 60.0]
+    delay_limits = [0.0, 999.999]
+    count_limits = [0, 2500]
     _auto_range_ulimit = 2.1e-2
     _auto_range_llimit = 2.1e-9
     _curr_limit = 0.0
     _integ_cycles = 0.0
     _line_freq = 60.0
+    _delay_limit = 0
+    _count = 1
+    _triggered = False
 
     def __init__(self, inst):
         self.inst = inst
         self.inst.write("*RST; *CLS")
+        self.inst.write("STAT:MEAS:ENAB 512; *SRE 1")
+        self.inst.write("TRAC:FEED:SENS; TRAC:FEED:CONT NEXT")
         self.auto_range_llimits = get_limits(inst, "RANG:AUTO:LLIM")
         self.auto_range_ulimits = get_limits(inst, "RANG:AUTO:ULIM")
         self.integ_cycles_limits = get_limits(inst, "NPLCycles")
         self._line_freq = inst.query_ascii_values("SYST:LFR?")[0]
+        self.count_limits = get_limits("TRIG:COUN")
+        self.delay_limits = get_limits("TRIG:DEL")
         self.integration_time = None
         self.range_auto_llimit = None
         self.range_auto_ulimit = None
+        self.trigger_count = None
+        self.delay = None
 
     def zero_check(self):
         self.inst.write("SYST:ZCH ON")
@@ -227,3 +249,29 @@ class K6485:
 
     def measurement(self):
         return [float(x) for x in re.split("A?,", self.inst.query("READ?"))]
+
+    @property
+    def trigger_count(self):
+        return self._count
+
+    @trigger_count.setter
+    def trigger_count(self, value):
+        if (within_limits(value, self.count_limits)):
+            self._count = int(value)
+        else:
+            self._count = 1
+        self.inst.write("TRIG:COUN %d" % self._count)
+        self.inst.write("TRAC:POIN %d" % self._count)
+
+    @property
+    def delay_limit(self):
+        return self._delay_limit
+
+    @delay_limit.setter
+    def delay_limit(self, value):
+        if (within_limits(value, self.delay_limits)):
+            self._delay_limit = value
+        else:
+            self._delay_limit = self.inst.query_ascii_values(
+                "TRIG:DEL? DEF")
+        self.inst.write("TRIG:DEL %f" % self._delay_limit)
