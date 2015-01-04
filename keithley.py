@@ -26,7 +26,7 @@ class K2400():
     _output = False
     _curr_limit = 0.0
     _volt_limit = 0.0
-    _delay_limit = 0.0
+    _delay = 0.0
     _integ_cycles = 1.0
     _line_freq = 60.0
     _count = 1
@@ -47,7 +47,7 @@ class K2400():
         self.integ_cycles_limits = get_limits(inst, "CURR:NPLC")
         self.current_limit = None
         self.voltage_limit = None
-        self.delay_limit = None
+        self.delay = None
         self.trigger_count = None
 
     @property
@@ -116,17 +116,16 @@ class K2400():
         self.inst.write("VOLT:PROT %f" % self._volt_limit)
 
     @property
-    def delay_limit(self):
-        return self._delay_limit
+    def delay(self):
+        return self._delay
 
-    @delay_limit.setter
-    def delay_limit(self, value):
+    @delay.setter
+    def delay(self, value):
         if (within_limits(value, self.delay_limits)):
-            self._delay_limit = value
+            self._delay = value
         else:
-            self._delay_limit = self.inst.query_ascii_values(
-                "TRIG:DEL? DEF")
-        self.inst.write("TRIG:DEL %f" % self._delay_limit)
+            self._delay = self.inst.query_ascii_values("TRIG:DEL? DEF")
+        self.inst.write("TRIG:DEL %f" % self._delay)
 
     @property
     def integration_time(self):
@@ -171,7 +170,7 @@ class K6485:
     _curr_limit = 0.0
     _integ_cycles = 0.0
     _line_freq = 60.0
-    _delay_limit = 0
+    _delay = 0.0
     _count = 1
     _triggered = False
 
@@ -273,14 +272,13 @@ class K6485:
         self.inst.write("TRAC:POIN %d" % self._count)
 
     @property
-    def delay_limit(self):
-        return self._delay_limit
+    def delay(self):
+        return self._delay
 
-    @delay_limit.setter
-    def delay_limit(self, value):
+    @delay.setter
+    def delay(self, value):
         if (within_limits(value, self.delay_limits)):
-            self._delay_limit = value
+            self._delay = value
         else:
-            self._delay_limit = self.inst.query_ascii_values(
-                "TRIG:DEL? DEF")
-        self.inst.write("TRIG:DEL %f" % self._delay_limit)
+            self._delay = self.inst.query_ascii_values("TRIG:DEL? DEF")
+        self.inst.write("TRIG:DEL %f" % self._delay)
