@@ -28,10 +28,9 @@ class K2400():
     def __init__(self, inst):
         self.inst = inst
         self.inst.write("*RST; *CLS")
-        self.curr_limits[0] = inst.query_ascii_values("CURR:PROT:LEV? MIN")[0]
-        self.curr_limits[1] = inst.query_ascii_values("CURR:PROT:LEV? MAX")[0]
-        self.volt_limits[0] = inst.query_ascii_values("VOLT:PROT:LEV? MIN")[0]
-        self.volt_limits[1] = inst.query_ascii_values("VOLT:PROT:LEV? MAX")[0]
+        self.curr_limits = get_limits(inst, "CURR:PROT:LEV")
+        self.volt_limits = get_limits(inst, "VOLT:PROT:LEV")
+        self.delay_limits = get_limits(inst, "TRIG:DEL")
         self.current_limit = None
         self.voltage_limit = None
         self.inst.write("FUNC:CONC ON")
@@ -82,15 +81,11 @@ class K2400():
 
     @current_limit.setter
     def current_limit(self, value):
-        if (
-                value is None or
-                self.curr_limits[0] > value or
-                self.curr_limits[1] < value
-        ):
+        if (within_limits(value, self.curr_limits)):
+            self._curr_limit = value
+        else:
             self._curr_limit = self.inst.query_ascii_values(
                 "CURR:PROT:LEV? DEF")[0]
-        else:
-            self._curr_limit = value
         self.inst.write("CURR:PROT %f" % self._curr_limit)
 
     @property
@@ -99,15 +94,11 @@ class K2400():
 
     @voltage_limit.setter
     def voltage_limit(self, value):
-        if (
-                value is None or
-                self.volt_limits[0] > value or
-                self.volt_limits[1] < value
-        ):
+        if (within_limits(value, self.volt_limits)):
+            self._volt_limit = value
+        else:
             self._volt_limit = self.inst.query_ascii_values(
                 "VOLT:PROT:LEV? DEF")[0]
-        else:
-            self._volt_limit = value
         self.inst.write("VOLT:PROT %f" % self._volt_limit)
 
 
