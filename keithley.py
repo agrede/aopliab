@@ -21,9 +21,15 @@ class K2400():
     volt_limits = [-21.0, 21.0]
     speed_limits = [0.01, 10.0]
     delay_limits = [0.0, 999.999]
+    count_limits = [0, 2500]
+    integ_cycles_limits = [0.01, 10.0]
     _output = False
-    _curr_limit = 0
-    _volt_limit = 0
+    _curr_limit = 0.0
+    _volt_limit = 0.0
+    _delay_limit = 0.0
+    _integ_cycles = 1.0
+    _line_freq = 60.0
+    _count = 1
 
     def __init__(self, inst):
         self.inst = inst
@@ -31,8 +37,13 @@ class K2400():
         self.curr_limits = get_limits(inst, "CURR:PROT:LEV")
         self.volt_limits = get_limits(inst, "VOLT:PROT:LEV")
         self.delay_limits = get_limits(inst, "TRIG:DEL")
+        self.count_limits = [int(x) for x in get_limits(inst, "TRIG:COUN")]
+        # Integration time is a global setting, CURR will be used as default
+        self.integ_cycles_limits = get_limits(inst, "CURR:NPLC")
         self.current_limit = None
         self.voltage_limit = None
+        self.delay_limit = None
+        self.trigger_count = None
         self.inst.write("FUNC:CONC ON")
         self.inst.write("FUNC 'VOLT', 'CURR'")
 
@@ -100,6 +111,49 @@ class K2400():
             self._volt_limit = self.inst.query_ascii_values(
                 "VOLT:PROT:LEV? DEF")[0]
         self.inst.write("VOLT:PROT %f" % self._volt_limit)
+
+    @property
+    def delay_limit(self):
+        return self._delay_limit
+
+    @delay_limit.setter
+    def delay_limit(self, value):
+        if (within_limits(value, self.delay_limits)):
+            self._delay_limit = value
+        else:
+            self._delay_limit = self.inst.query_ascii_values(
+                "TRIG:DEL? DEF")
+        self.inst.write("TRIG:DEL %f" % self._delay_limit)
+
+    @property
+    def integration_time(self):
+        return self._integ_cycles/self._line_freq
+
+    @integration_time.setter
+    def integration_time(self, value):
+        if value is None:
+            tvalue = None
+        else:
+            tvalue = value*self._line_freq
+        if (within_limits(tvalue, self.integ_cycles_limits)):
+            self._integ_cycles = tvalue
+        else:
+            self._integ_cycles = self.inst.query_ascii_values(
+                "CURR:NPLC? DEF")[0]
+        self.inst.write("CURR:NPLC %f" % self._integ_cycles)
+
+    @property
+    def trigger_count(self):
+        return self._count
+
+    @trigger_count.setter
+    def trigger_count(self, value):
+        if (within_limits(value, self.count_limits)):
+            self._count = int(value)
+        else:
+            self._count = 1
+        self.inst.write("TRIG:COUN %d" % self._count)
+        self.inst.write("TRAC:POIN %d" % self._count)
 
 
 class K6485:
