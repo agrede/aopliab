@@ -68,19 +68,11 @@ class K2400():
         return self.inst.query_ascii_values("DATA?")
 
     def set_voltage(self, value):
-        if (
-                value is not None and
-                self.volt_limits[0] < value and
-                self.volt_limits[1] > value
-        ):
+        if (within_limits(value, self.volt_limits)):
             self.inst.write("SOUR:VOLT %f" % value)
 
     def set_current(self, value):
-        if (
-                value is not None or
-                self.curr_limits[0] < value or
-                self.curr_limits[1] > value
-        ):
+        if (within_limits(value, self.curr_limits)):
             self.inst.write("SOUR:CURR %f" % value)
 
     def measurement(self):
