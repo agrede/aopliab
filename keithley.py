@@ -31,12 +31,14 @@ class K2400():
     _line_freq = 60.0
     _count = 1
     _triggered = False
+    _source_volt = True
 
     def __init__(self, inst):
         self.inst = inst
         self.inst.write("*RST; *CLS")
         self.inst.write("STAT:MEAS:ENAB 512; *SRE 1")
         self.inst.write("TRAC:FEED:SENS; TRAC:FEED:CONT NEXT")
+        self.inst.write("SOUR:FUNC VOLT")
         self.inst.write("FUNC:CONC ON")
         self.inst.write("FUNC 'VOLT', 'CURR'")
         self.curr_limits = get_limits(inst, "CURR:PROT:LEV")
@@ -78,10 +80,16 @@ class K2400():
         return data
 
     def set_voltage(self, value):
+        if (not self._source_volt):
+            self.inst.write("SOUR:FUNC VOLT")
+            self._source_volt = True
         if (within_limits(value, self.volt_limits)):
             self.inst.write("SOUR:VOLT %f" % value)
 
     def set_current(self, value):
+        if (self._source_volt):
+            self.inst.write("SOUR:FUNC CURR")
+            self._source_volt = False
         if (within_limits(value, self.curr_limits)):
             self.inst.write("SOUR:CURR %f" % value)
 
