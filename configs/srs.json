@@ -1,0 +1,65 @@
+{
+    "SR570": {
+        "description": {
+            "use": "transimpedance_amplifier",
+            "manufacturer": "Stanfor Research Systems"
+        },
+        "sensitivity_limit_desc": [
+            "Sensitivity [A/V]",
+            "Bandwidth High BW (3 dB) [Hz]",
+            "Bandwidth Low BW (3 dB) [Hz]",
+            "Noise High BW [A/Hz]",
+            "Noise Low BW [A/Hz]",
+            "Temp coefficient Low Drift (ratio of input)",
+            "Temp coefficient Low Drift (offset) [A]",
+            "DC Input Impedance [Ohms]"
+        ],
+        "sensitivity_limits": [
+            [1e-03, 1.0e6, 1.0e6, 1.5e-10, 1.5e-10, 1.0e-4, 2.0e-08, 1e0],
+            [1e-04, 1.0e6, 5.0e5, 1.0e-10, 6.0e-11, 1.0e-4, 2.0e-09, 1e0],
+            [1e-05, 8.0e5, 2.0e5, 6.0e-11, 2.0e-12, 1.0e-4, 2.0e-10, 1e2],
+            [1e-06, 2.0e5, 2.0e4, 2.0e-12, 6.0e-13, 1.0e-4, 2.0e-11, 1e2],
+            [1e-07, 2.0e4, 2.0e3, 6.0e-13, 1.0e-13, 1.0e-4, 2.0e-12, 1e4],
+            [1e-08, 2.0e3, 2.0e2, 1.0e-13, 6.0e-14, 1.0e-4, 4.0e-13, 1e4],
+            [1e-09, 2.0e2, 1.5e1, 6.0e-14, 1.0e-14, 2.5e-4, 4.0e-14, 1e6],
+            [1e-10, 1.0e2, 1.0e1, 1.0e-14, 5.0e-15, 2.5e-4, 2.0e-14, 1e6],
+            [1e-11, 2.0e1, 1.0e1, 1.0e-14, 5.0e-15, 4.0e-4, 2.0e-14, 1e6],
+            [1e-12, 1.0e1, 1.0e1, 5.0e-15, 5.0e-15, 4.0e-4, 2.0e-14, 1e6]
+        ],
+        "sensitivities": [
+            1e-12, 2e-12, 5e-12,
+            1e-11, 2e-11, 5e-11,
+            1e-10, 2e-10, 5e-10,
+            1e-09, 2e-09, 5e-09,
+            1e-08, 2e-08, 5e-08,
+            1e-07, 2e-07, 5e-07,
+            1e-06, 2e-06, 5e-06,
+            1e-05, 2e-05, 5e-05,
+            1e-04, 2e-04, 5e-04,
+            1e-03
+        ],
+        "currents": [
+            1e-12, 2e-12, 5e-12,
+            1e-11, 2e-11, 5e-11,
+            1e-10, 2e-10, 5e-10,
+            1e-09, 2e-09, 5e-09,
+            1e-08, 2e-08, 5e-08,
+            1e-07, 2e-07, 5e-07,
+            1e-06, 2e-06, 5e-06,
+            1e-05, 2e-05, 5e-05,
+            1e-04, 2e-04, 5e-04,
+            1e-03, 2e-03, 5e-03
+        ],
+        "frequencies": [
+            3e-2,
+            1e-1, 3e-3,
+            1e+0, 3e+0,
+            1e+1, 3e+1,
+            1e+2, 3e+2,
+            1e+3, 3e+3,
+            1e+4, 3e+4,
+            1e+5, 3e+5,
+            1e+6
+        ]
+    }
+}
