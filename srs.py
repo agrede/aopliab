@@ -31,7 +31,7 @@ class SR570():
     _sens_index = 27
     _gain_mode_index = 0
     _invert_output = 0
-    _front_lights = True
+    _output = True
     _lp_freq_index = 15
     _hp_freq_index = 0
     _filter_index = 5
@@ -46,10 +46,10 @@ class SR570():
         cfg_file = open("configs/srs.json")
         cfg = json.load(cfg_file)
         cfg_file.close()
-        self.freqs = np.array(cfg['frequencies'])
-        self.currs = np.array(cfg['currents'])
-        self.senss = np.array(cfg['sensitivities'])
-        self.config = cfg
+        self.config = cfg['SR570']
+        self.freqs = np.array(self.config['frequencies'])
+        self.currs = np.array(self.config['currents'])
+        self.senss = np.array(self.config['sensitivities'])
 
     def nearest_volt_index(self, v):
         if (abs(int(v*1e3)) > 5000):
@@ -68,6 +68,10 @@ class SR570():
         if (within_limits(int(value), [0, 5])):
             self._filter_index = int(value)
             self.inst.write("FLTT%d" % value)
+            if (self._filter_index <= 2):
+                self.inst.write("HFRQ%d" % self._hp_freq_index)
+            if (self._filter_index >= 2):
+                self.inst.write("LFRQ%d" % self._lp_freq_index)
 
     @property
     def lp_freq(self):
@@ -75,7 +79,7 @@ class SR570():
 
     @lp_freq.setter
     def lp_freq(self, value):
-        self._lp.freq_index = self.nearest_freq_index(value, False)
+        self._lp_freq_index = self.nearest_freq_index(value, True)
         if (within_limits(self._filter_index, [2, 4])):
             self.inst.write("LFRQ%d" % self._lp_freq_index)
 
@@ -85,7 +89,7 @@ class SR570():
 
     @hp_freq.setter
     def hp_freq(self, value):
-        self._hp_freq_index = self.nearest_freq_index(value, True)
+        self._hp_freq_index = self.nearest_freq_index(value, False)
         if (within_limits(self._filter_index, [0, 2])):
             self.inst.write("HFRQ%d" % self._hp_freq_index)
 
@@ -167,16 +171,16 @@ class SR570():
             self.inst.write("GNMD%d" % self._gain_mode_index)
 
     @property
-    def front_lights(self):
-        return self._front_lights
+    def output(self):
+        return self._output
 
-    @front_lights.setter
-    def front_lights(self, value):
+    @output.setter
+    def output(self, value):
         if (value):
-            self._front_lights = True
+            self._output = True
             self.inst.write("BLNK0")
         else:
-            self._front_lights = False
+            self._output = False
             self.inst.write("BLNK1")
 
     @property
