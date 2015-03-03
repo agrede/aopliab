@@ -6,11 +6,13 @@ def within_limits(value, limits):
 
 
 def nearest_index(value, values, rndup):
-    if (value < values[0]):
-        value = values[0]
-    elif(value > values[-1]):
-        value = values[-1]
-    idx = np.where(value <= values)[0][0]
-    if (not rndup and value < values[idx]):
+    k = np.where(np.isfinite(values))[0]
+    tvalues = values[k]
+    if (value < tvalues[0]):
+        value = tvalues[0]
+    elif(value > tvalues[-1]):
+        value = tvalues[-1]
+    idx = np.where(value <= tvalues)[0][0]
+    if (not rndup and value < tvalues[idx]):
         idx = idx-1
-    return idx
+    return k[idx]
