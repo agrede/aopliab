@@ -32,7 +32,7 @@ class SR7230():
         tmp1 = self.inst.query_ascii_values(str, separator=self.separator)
         self.inst.read_raw()
         return tmp1
-        
+
     def write(self, str):
         self.inst.write(str)
         self.inst.read_raw()
