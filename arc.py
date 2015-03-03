@@ -6,10 +6,10 @@ class SpecPro():
     """
     Uses ARC_SpectraPro.dll to interface with mono
     """
-    self._mono = c_int(32)
+    _mono = c_int(32)
 
-    def __init__(self, com_port, dll_path="ARC_SpectraPro.dll"):
-        self._dll = wdll(dll_path)
+    def __init__(self, com_port, dll_path="C:\\Program Files (x86)\\Princeton Instruments\\MonoControl\\ARC_SpectraPro.dll"):
+        self._dll = windll.LoadLibrary(dll_path)
         self._dll.ARC_Open_Mono_Port(com_port, byref(self._mono))
 
     def close(self):
