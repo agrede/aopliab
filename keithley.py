@@ -1,14 +1,10 @@
 import re
-
+from pyvd_common import within_limits
 
 def get_limits(inst, query):
     return [
         inst.query_ascii_values(query+"? MIN")[0],
         inst.query_ascii_values(query+"? MAX")[0]]
-
-
-def within_limits(value, limits):
-    return (value is not None and limits[0] <= value and limits[1] >= value)
 
 
 class K2400():
