@@ -6,6 +6,7 @@ from srs import SR570
 from ametek import SR7230
 from arc import SpecPro
 from time import sleep
+from pyvd_common import DynamicPlot
 
 plt.interactive(True)
 fg, ax = plt.subplots()
@@ -43,10 +44,6 @@ mpow = np.zeros(lam.shape)
 
 p = DynamicPlot()
 
-#for idx, l in enumerate(lam):
-#    sleep(dwell)
-#    p.update(l,1240.0/l)
-    
 for idx, l in enumerate(lam):
     mon.wavelength = l
     sleep(dwell)
@@ -57,34 +54,9 @@ for idx, l in enumerate(lam):
     mcur[idx] = mvolt[idx]*sens
     mpow[idx] = mcur[idx]*SiR(mlam[idx])
     p.update(mlam[idx], mpow[idx])
-    # lns.set_xdata(np.append(lns.get_xdata(), mlam[idx]))
-    #lns.set_ydata(np.append(lns.get_ydata(), mpow[idx]))
-    #ax.relim()
-    #ax.autoscale_view()
-    #plt.draw()
-    # fg.canvas.draw()
-    # fg.canvas.flush_events()
+
+mon.wavelength = 550
 
 mon.close()
 tia_in.close()
 lia_in.close()
-
-class DynamicPlot():
-    
-    def __init__(self):
-        #Set up plot
-        self.figure, self.ax = plt.subplots()
-        self.lines, = self.ax.plot([],[], 'o-')
-        #Autoscale on unknown axis and known lims on the other
-        self.ax.set_autoscale_on(True)
-
-    def update(self, newx, newy):
-        #Update data (with the new _and_ the old points)
-        self.lines.set_xdata(np.append(self.lines.get_xdata(), newx))
-        self.lines.set_ydata(np.append(self.lines.get_ydata(), newy))
-        #Need both of these in order to rescale
-        self.ax.relim()
-        self.ax.autoscale_view()
-        #We need to draw *and* flush
-        self.figure.canvas.draw()
-        self.figure.canvas.flush_events()

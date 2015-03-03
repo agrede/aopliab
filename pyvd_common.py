@@ -1,4 +1,5 @@
 import numpy as np
+import matplotlib.pyplot as plt
 
 
 def within_limits(value, limits):
@@ -16,3 +17,31 @@ def nearest_index(value, values, rndup):
     if (not rndup and value < tvalues[idx]):
         idx = idx-1
     return k[idx]
+
+
+class DynamicPlot():
+    def __init__(self):
+        #Set up plot
+        self.figure, self.ax = plt.subplots()
+        self.lines, = self.ax.plot([],[], 'o-')
+        #Autoscale on unknown axis and known lims on the other
+        self.ax.set_autoscale_on(True)
+
+    def update(self, newx, newy):
+        #Update data (with the new _and_ the old points)
+        self.lines.set_xdata(np.append(self.lines.get_xdata(), newx))
+        self.lines.set_ydata(np.append(self.lines.get_ydata(), newy))
+        #Need both of these in order to rescale
+        self.ax.relim()
+        self.ax.autoscale_view()
+        #We need to draw *and* flush
+        self.figure.canvas.draw()
+        self.figure.canvas.flush_events()
+
+    def clear(self):
+        self.lines.set_xdata([])
+        self.lines.set_ydata([])
+        self.ax.relim()
+        self.ax.autoscale_view()
+        self.figure.canvas.draw()
+        self.figure.canvas.flush_events()
