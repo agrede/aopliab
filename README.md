@@ -1,7 +1,6 @@
-PyVISA Drivers
+AOPLIAB
 ==============
 
+Drivers and software for controlling lab equipment
 
-Drivers for use with PyVISA
-
-Copyright 2014 Alex J Grede
+Copyright 2014--2015 Alex J Grede
