@@ -26,13 +26,13 @@ tia = SR570(tia_in)
 lia_in = rm.open_resource("TCPIP::169.254.150.230::50000::SOCKET", read_termination='\0',  write_termination='\0')
 lia = SR7230(lia_in)
 
-mon = SpecPro(4, "")
+mon = SpecPro(4)
 
 lam = np.arange(300, 605, 5)
 
 dwell = lia.filter_time_constant*6
 
-tia.sensitivity = 500e-6
+tia.sensitivity = 50e-6
 
 sens = tia.sensitivity
 
@@ -55,8 +55,13 @@ for idx, l in enumerate(lam):
     mpow[idx] = mcur[idx]*SiR(mlam[idx])
     p.update(mlam[idx], mpow[idx])
 
-mon.wavelength = 550
+mon.wavelength = 550.0
+
 
 mon.close()
 tia_in.close()
 lia_in.close()
+
+from lakeshore import LKS335
+cry_in = rm.open_resource("GPIB0::12::INSTR")
+cry = LKS335(cry_in)

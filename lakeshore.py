@@ -1,7 +1,7 @@
 from pyvd_common import within_limits
 
 
-class LKS355():
+class LKS335():
     setpoint_range = [0, 325]
 
     def __init__(self, inst):
@@ -41,7 +41,7 @@ class LKS355():
     @heater1_setpoint.setter
     def heater1_setpoint(self, value):
         if (within_limits(value, self.setpoint_range)):
-            self.inst.write("SETP 1,%f", value)
+            self.inst.write("SETP 1,%f" % value)
 
     @property
     def heater2_setpoint(self):
@@ -50,7 +50,7 @@ class LKS355():
     @heater2_setpoint.setter
     def heater2_setpoint(self, value):
         if (within_limits(value, self.setpoint_range)):
-            self.inst.write("SETP 2,%f", value)
+            self.inst.write("SETP 2,%f" % value)
 
     @property
     def heater1_output_enabled(self):
@@ -96,7 +96,7 @@ class LKS355():
 
     @property
     def leds(self):
-        return (self.inst.query_ascii_values("LEDS?") == 1)
+        return (self.inst.query_ascii_values("LEDS?")[0] == 1)
 
     @leds.setter
     def leds(self, value):

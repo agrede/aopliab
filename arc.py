@@ -32,6 +32,6 @@ class SpecPro():
     def get_limits(self):
         tmp = c_double()
         self._dll.ARC_get_Mono_Wavelength_Cutoff_nm(self._mono, byref(tmp))
-        self.wavelength_limits[1] = tmp
+        self.wavelength_limits[1] = tmp.value
         self._dll.ARC_get_Mono_Wavelength_Min_nm(self._mono, byref(tmp))
-        self.wavelength_limits[0] = tmp
+        self.wavelength_limits[0] = tmp.value
