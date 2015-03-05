@@ -52,7 +52,7 @@ for idx, l in enumerate(lam):
     mvolt[idx] = tmp[0]
     mphas[idx] = tmp[1]
     mcur[idx] = mvolt[idx]*sens
-    mpow[idx] = mcur[idx]*SiR(mlam[idx])
+    mpow[idx] = mcur[idx]/SiR(mlam[idx])
     p.update(mlam[idx], mpow[idx])
 
 mon.wavelength = 550.0
