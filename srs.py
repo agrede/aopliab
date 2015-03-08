@@ -1,6 +1,6 @@
 import numpy as np
 import json
-from pyvd_common import within_limits, nearest_index
+from aopliab_common import within_limits, nearest_index
 
 
 class SR570():

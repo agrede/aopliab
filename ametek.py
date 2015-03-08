@@ -1,7 +1,7 @@
 import numpy as np
 import json
 import collections
-from pyvd_common import within_limits, nearest_index
+from aopliab_common import within_limits, nearest_index
 
 
 class SR7230():
