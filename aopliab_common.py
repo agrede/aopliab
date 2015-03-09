@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import json
 
 
 def within_limits(value, limits):
@@ -45,3 +46,19 @@ class DynamicPlot():
         self.ax.autoscale_view()
         self.figure.canvas.draw()
         self.figure.canvas.flush_events()
+
+
+class NumpyAwareJSONEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, np.ndarray):
+            if obj.ndim == 1:
+                return obj.tolist()
+            else:
+                return [self.default(obj[i]) for i in range(obj.shape[0])]
+        return json.JSONEncoder.default(self, obj)
+        
+
+def json_write(obj, fp):
+    fo = open(fp, mode='w')
+    json.dump(obj, fo, cls=NumpyAwareJSONEncoder)
+    fo.close()
