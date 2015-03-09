@@ -6,8 +6,10 @@ from srs import SR570
 from ametek import SR7230
 from arc import SpecPro
 from time import sleep, time
-from aopliab_common import DynamicPlot
+import scipy.constants as PC
+from aopliab_common import DynamicPlot, json_write
 
+hc = PC.h*PC.c/PC.e*1e9
 
 def runMean(x, N):
     return np.convolve(x, np.ones((N,))/N)[(N-1):]
@@ -30,59 +32,145 @@ lia = SR7230(lia_in)
 
 mon = SpecPro(4)
 
-lam = np.arange(1050, 1305, 5)
+
+outd = {}
+outd['cal'] = {}
+outd['cal']['sens'] = np.ones(3)
+outd['cal']['pd'] = np.array(["Si", "Si", "Ge"])
+nm = 'LVO_LSAT_36mT'
+outd[nm] = {}
+
+ivd = np.genfromtxt(wd+nm+".txt", delimiter='\t')
+
+outd[nm]['iv'] = ivd
+m,b = np.linalg.lstsq(np.hstack((ivd[:,[0]],ivd[:,[0]]**0)), ivd[:,1])[0]
+outd[nm]['R'] = 1/m
+
+json_write(outd, wd+"data.json")
+
+tia.bias_volt = 1.0
+tia.volt_output = True
+tia.sensitivity = 500e-9
+
+dwell = lia.filter_time_constant*8
+
+outd[nm]['eqe'] = {}
+outd[nm]['eqe']['settings'] = {
+    'bias': tia.bias_volt, 
+    'sens': tia.sensitivity,
+    'tc': lia.filter_time_constant,
+    'dwell': dwell}
+
+json_write(outd, wd+"data.json")
+
+lam = np.array([
+    np.arange(300, 580, 5),
+    np.arange(535, 850, 5),
+    np.arange(815, 1405, 5)])
 
 dwell = lia.filter_time_constant*8
 
 
 sens = tia.sensitivity
 
-mvolt = np.zeros(lam.shape)
-mphas = np.zeros(lam.shape)
-mlam = np.zeros(lam.shape)
-mcur = np.zeros(lam.shape)
-mpow = np.zeros(lam.shape)
+cvolt = np.array([np.zeros(x.shape) for x in lam])
+cphas = np.array([np.zeros(x.shape) for x in lam])
+clam = np.array([np.zeros(x.shape) for x in lam])
+ccur = np.array([np.zeros(x.shape) for x in lam])
+cpow = np.array([np.zeros(x.shape) for x in lam])
+cphi = np.array([np.zeros(x.shape) for x in lam])
 
+sens = tia.sensitivity
+dwell = lia.filter_time_constant*8
 p = DynamicPlot()
-
-for idx, l in enumerate(lam):
+m = 2
+for idx, l in enumerate(lam[m]):
     mon.wavelength = l
     sleep(dwell)
-    mlam[idx] = mon.wavelength
+    clam[m][idx] = mon.wavelength
     tmp = lia.magphase
-    mvolt[idx] = tmp[0]
-    mphas[idx] = tmp[1]
-    mcur[idx] = mvolt[idx]*sens
-    mpow[idx] = mcur[idx]/GeR(mlam[idx])
-    p.update(mlam[idx], mpow[idx])
+    cvolt[m][idx] = tmp[0]
+    cphas[m][idx] = tmp[1]
+    ccur[m][idx] = cvolt[m][idx]*sens
+    cpow[m][idx] = ccur[m][idx]/GeR(clam[m][idx])
+    cphi[m][idx] = cpow[m][idx]*clam[m][idx]/hc
+    p.update(clam[m][idx], cphi[m][idx])
 
+outd['cal']['sens'][m] = tia.sensitivity
+outd['cal']['volt'] = cvolt
+outd['cal']['phas'] = cphas
+outd['cal']['cur'] = ccur
+outd['cal']['pow'] = cpow
+outd['cal']['phi'] = cphi
+outd['cal']['lam'] = clam
+json_write(outd, wd+"data.json")
 tia.sensitivity = 1e-3
 mon.wavelength = 550.0
 
+calLam = np.hstack((clam[0][:-1], clam[1][8:-1], clam[2][6:]))
+X = np.vstack((calLam, np.ones(calLam.size))).T
+calPhi = interp1d(calLam, np.hstack((cphi[0][:-1], cphi[1][8:-1], cphi[2][6:])),kind='cubic')
+calPow = interp1d(calLam, np.hstack((cpow[0][:-1], cpow[1][8:-1], cpow[2][6:])),kind='cubic')
 
-lam = np.arange(1220, 1305, 5)
+mvolt = np.array([np.zeros(x.shape) for x in lam])
+mphas = np.array([np.zeros(x.shape) for x in lam])
+mlam = np.array([np.zeros(x.shape) for x in lam])
+mcur = np.array([np.zeros(x.shape) for x in lam])
+mres = np.array([np.zeros(x.shape) for x in lam])
+meqe = np.array([np.zeros(x.shape) for x in lam])
 
-dwell = lia.filter_time_constant*8
+nm = 'LV8_STO_25mT'
+outd[nm] = {}
 
+ivd = np.genfromtxt(wd+nm+".txt", delimiter='\t')
 
-sens = tia.sensitivity
+outd[nm]['iv'] = ivd
+m1,b1 = np.linalg.lstsq(np.hstack((ivd[:,[0]],ivd[:,[0]]**0)), ivd[:,1])[0]
+outd[nm]['R'] = 1/m1
 
-mvolt = np.zeros(lam.shape)
-mphas = np.zeros(lam.shape)
-mlam = np.zeros(lam.shape)
-mcur = np.zeros(lam.shape)
+outd[nm]['eqe'] = {}
+outd[nm]['eqe']['settings'] = {
+    'bias': np.zeros(3), 
+    'sens': np.ones(3),
+    'lisens': np.ones(3),
+    'tc': np.ones(3),
+    'dwell': np.ones(3)}
 
 p = DynamicPlot()
+tia.bias_volt = 1.0
+tia.volt_output = True
+tia.sensitivity = 10e-6
 
-for idx, l in enumerate(lam):
+dwell = lia.filter_time_constant*8
+sens = tia.sensitivity
+m = 0
+for idx, l in enumerate(lam[m]):
     mon.wavelength = l
     sleep(dwell)
-    mlam[idx] = mon.wavelength
+    mlam[m][idx] = mon.wavelength
     tmp = lia.magphase
-    mvolt[idx] = tmp[0]
-    mphas[idx] = tmp[1]
-    mcur[idx] = mvolt[idx]*sens
-    p.update(mlam[idx], mcur[idx])
+    mvolt[m][idx] = tmp[0]
+    mphas[m][idx] = tmp[1]
+    mcur[m][idx] = mvolt[m][idx]*sens
+    mres[m][idx] = mcur[m][idx]/calPow(mlam[m][idx])
+    meqe[m][idx] = mcur[m][idx]/calPhi(mlam[m][idx])
+    p.update(mlam[m][idx], meqe[m][idx])
+
+outd[nm]['eqe']['settings']['sens'][m] = tia.sensitivity
+outd[nm]['eqe']['settings']['lisens'][m] = lia.sensitivity
+outd[nm]['eqe']['settings']['bias'][m] = tia.bias_volt
+outd[nm]['eqe']['settings']['tc'][m] = lia.filter_time_constant
+outd[nm]['eqe']['settings']['dwell'][m] = dwell
+outd[nm]['eqe']['lam'] = mlam
+outd[nm]['eqe']['volt'] = mvolt
+outd[nm]['eqe']['phas'] = mphas
+outd[nm]['eqe']['cur'] = mcur
+outd[nm]['eqe']['res'] = mres
+outd[nm]['eqe']['eqe'] = meqe
+
+json_write(outd, wd+"data.json")
+tia.sensitivity = 1e-3
+mon.wavelength = 550.0
 
 tia.sensitivity = 1e-3
 mon.wavelength = 550.0
