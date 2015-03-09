@@ -81,7 +81,7 @@ class SR570():
 
     @property
     def bias_volt(self):
-        return float(self.volt_bias_index)*1e-3
+        return float(self._volt_bias_index)*1e-3
 
     @bias_volt.setter
     def bias_volt(self, value):

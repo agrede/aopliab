@@ -1,5 +1,5 @@
 import re
-from pyvd_common import within_limits
+from aopliab_common import within_limits
 
 def get_limits(inst, query):
     return [
@@ -33,7 +33,7 @@ class K2400():
         self.inst = inst
         self.inst.write("*RST; *CLS")
         self.inst.write("STAT:MEAS:ENAB 512; *SRE 1")
-        self.inst.write("TRAC:FEED:SENS; TRAC:FEED:CONT NEXT")
+        self.inst.write("TRAC:FEED SENS; TRAC:FEED:CONT NEXT")
         self.inst.write("SOUR:FUNC VOLT")
         self.inst.write("FUNC:CONC ON")
         self.inst.write("FUNC 'VOLT', 'CURR'")
