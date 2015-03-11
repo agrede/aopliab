@@ -9,7 +9,69 @@ from time import sleep, time
 import scipy.constants as PC
 from aopliab_common import DynamicPlot, json_write
 
+
+def altIfNan(xs):
+    for x in xs:
+        if (not np.isnan(x)):
+            return x
+    return xs[-1]
+
+
+def measureResponse(lam, mon, lia, dwell, plot=None, N=1, tia=None, 
+                    res=None, incPow=None):
+    hc = PC.h*PC.c/PC.e*1e9
+    rtn = {}
+    rtn['mlam'] = np.zeros(lam.shape)
+    rtn['cur'] = np.zeros((lam.size, N))
+    rtn['phas'] = np.zeros((lam.size, N))
+    sens = 1
+    if (incPow is not None):
+        rtn['res'] = np.zeros(lam.shape)
+        rtn['eqe'] = np.zeros(lam.shape)
+        dvsr = incPow
+        dvsr.bounds_error = False
+    elif (res is not None):
+        rtn['pow'] = np.zeros(lam.shape)
+        rtn['phi'] = np.zeros(lam.shape)
+        dvsr = res
+        dvsr.bounds_error = False
+    else:
+        dvsr = lambda x: 1.0
+    if (tia is not None):
+        sens = tia.sensitivity
+        rtn['volt'] = np.zeros((lam.size, N))
+    for k, l in enumerate(lam):        
+        mon.wavelength = l
+        rtn['mlam'][k] = mon.wavelength
+        d = altIfNan([dvsr(rtn['mlam'][k]), dvsr(l)])
+        sleep(dwell)
+        for n in range(N):
+            tmp = lia.magphas
+            if (tia is not None):
+                rtn['volt'][k, n] = tmp[0]
+            rtn['cur'][k, n] = tmp[0]*sens
+            rtn['phas'][k, n] = tmp[1]
+        if (incPow is not None):
+            rtn['res'][k] = np.nanmean(rtn['cur'][k, :], axis=1)/d
+            rtn['eqe'][k] = rtn['res'][k]*hc/rtn['mlam'][k]
+            y = rtn['eqe'][k]
+        elif (res is not None):
+            rtn['pow'][k] = np.nanmean(rtn['cur'][k, :], axis=1)/d
+            rtn['phi'][k] = rtn['res'][k]*rtn['mlam'][k]/hc
+            y = rtn['phi'][k]
+        else:
+            y = np.nanmean(rtn['cur'][k, :], axis=1)
+        if (plot is not None):
+            plot.update(rtn['mlam'][k], y)
+    return rtn
+    
+
+
+
+
 hc = PC.h*PC.c/PC.e*1e9
+wd = "C:\\Users\\Maxwell\\Desktop\\Grede\\2015-03-10\\"
+
 
 def runMean(x, N):
     return np.convolve(x, np.ones((N,))/N)[(N-1):]
@@ -25,7 +87,7 @@ rm = visa.ResourceManager()
 
 tia_in = rm.open_resource("ASRL1::INSTR", baud_rate=9600, data_bits=8, stop_bits=visa.constants.StopBits.two,write_termination='\r\n')
 tia = SR570(tia_in)
-tia.sensitivity = 50e-6
+tia.sensitivity = 1e-3
 
 lia_in = rm.open_resource("TCPIP::169.254.150.230::50000::SOCKET", read_termination='\0',  write_termination='\0')
 lia = SR7230(lia_in)
@@ -34,93 +96,80 @@ mon = SpecPro(4)
 
 
 outd = {}
-outd['cal'] = {}
-outd['cal']['sens'] = np.ones(3)
-outd['cal']['pd'] = np.array(["Si", "Si", "Ge"])
-nm = 'LVO_LSAT_36mT'
-outd[nm] = {}
-
-ivd = np.genfromtxt(wd+nm+".txt", delimiter='\t')
-
-outd[nm]['iv'] = ivd
-m,b = np.linalg.lstsq(np.hstack((ivd[:,[0]],ivd[:,[0]]**0)), ivd[:,1])[0]
-outd[nm]['R'] = 1/m
-
-json_write(outd, wd+"data.json")
-
-tia.bias_volt = 1.0
-tia.volt_output = True
-tia.sensitivity = 500e-9
-
-dwell = lia.filter_time_constant*8
-
-outd[nm]['eqe'] = {}
-outd[nm]['eqe']['settings'] = {
-    'bias': tia.bias_volt, 
-    'sens': tia.sensitivity,
-    'tc': lia.filter_time_constant,
-    'dwell': dwell}
+outd['cal2'] = {}
+outd['cal2']['sens'] = np.ones(5)
+outd['cal2']['dwell'] = np.zeros(5)
+outd['cal2']['tc'] = np.zeros(5)
+outd['cal2']['pd'] = np.array(["Si", "Si", "Si", "Si", "Ge"])
 
 json_write(outd, wd+"data.json")
 
 lam = np.array([
-    np.arange(300, 580, 5),
-    np.arange(535, 850, 5),
-    np.arange(815, 1405, 5)])
+    np.arange(200, 300, 5),
+    np.arange(300, 415, 5),
+    np.arange(390, 565, 5),
+    np.arange(540, 845, 5),
+    np.arange(820, 1605, 5)])
 
-dwell = lia.filter_time_constant*8
-
-
-sens = tia.sensitivity
-
-cvolt = np.array([np.zeros(x.shape) for x in lam])
-cphas = np.array([np.zeros(x.shape) for x in lam])
+N = 10
+cvolt = np.array([np.zeros((x.size, N)) for x in lam])
+cphas = np.array([np.zeros((x.size, N)) for x in lam])
 clam = np.array([np.zeros(x.shape) for x in lam])
 ccur = np.array([np.zeros(x.shape) for x in lam])
 cpow = np.array([np.zeros(x.shape) for x in lam])
 cphi = np.array([np.zeros(x.shape) for x in lam])
 
+p = DynamicPlot()
+tia.sensitivity = 1e-4
 sens = tia.sensitivity
 dwell = lia.filter_time_constant*8
-p = DynamicPlot()
-m = 2
+m = 1
 for idx, l in enumerate(lam[m]):
     mon.wavelength = l
     sleep(dwell)
+    for n in range(N):
+        tmp = lia.magphase
+        cvolt[m][idx, n] = tmp[0]
+        cphas[m][idx, n] = tmp[1]
     clam[m][idx] = mon.wavelength
-    tmp = lia.magphase
-    cvolt[m][idx] = tmp[0]
-    cphas[m][idx] = tmp[1]
-    ccur[m][idx] = cvolt[m][idx]*sens
-    cpow[m][idx] = ccur[m][idx]/GeR(clam[m][idx])
+    ccur[m][idx] = np.nanmean(cvolt[m][idx,:])*sens
+    if (m == 0 and idx == 0):
+        cpow[m][idx] = ccur[m][idx]/SiR(l)
+    elif (outd['cal2']['pd'][m] == "Si"):
+        cpow[m][idx] = ccur[m][idx]/SiR(clam[m][idx])
+    else:
+        cpow[m][idx] = ccur[m][idx]/GeR(clam[m][idx])
     cphi[m][idx] = cpow[m][idx]*clam[m][idx]/hc
     p.update(clam[m][idx], cphi[m][idx])
 
-outd['cal']['sens'][m] = tia.sensitivity
-outd['cal']['volt'] = cvolt
-outd['cal']['phas'] = cphas
-outd['cal']['cur'] = ccur
-outd['cal']['pow'] = cpow
-outd['cal']['phi'] = cphi
-outd['cal']['lam'] = clam
+outd['cal2']['sens'][m] = tia.sensitivity
+outd['cal2']['dwell'][m] = dwell
+outd['cal2']['tc'][m] = lia.filter_time_constant
+outd['cal2']['volt'] = cvolt
+outd['cal2']['phas'] = cphas
+outd['cal2']['cur'] = ccur
+outd['cal2']['pow'] = cpow
+outd['cal2']['phi'] = cphi
+outd['cal2']['lam'] = clam
 json_write(outd, wd+"data.json")
 tia.sensitivity = 1e-3
 mon.wavelength = 550.0
 
-calLam = np.hstack((clam[0][:-1], clam[1][8:-1], clam[2][6:]))
-X = np.vstack((calLam, np.ones(calLam.size))).T
-calPhi = interp1d(calLam, np.hstack((cphi[0][:-1], cphi[1][8:-1], cphi[2][6:])),kind='cubic')
-calPow = interp1d(calLam, np.hstack((cpow[0][:-1], cpow[1][8:-1], cpow[2][6:])),kind='cubic')
 
+calLam = np.hstack((clam[0], clam[1][:-1], clam[2][4:-1], clam[3][4:-1], clam[4][4:]))
+calPhi = interp1d(calLam, np.hstack((cphi[0], cphi[1][:-1], cphi[2][4:-1], cphi[3][4:-1], cphi[4][4:])),kind='cubic')
+calPow = interp1d(calLam, np.hstack((cphi[0], cpow[1][:-1], cpow[2][4:-1], cpow[3][4:-1], cpow[4][4:])),kind='cubic')
+
+
+
+nm = 'LVO_LSAT_36mT_2'
+outd[nm] = {}
 mvolt = np.array([np.zeros(x.shape) for x in lam])
 mphas = np.array([np.zeros(x.shape) for x in lam])
 mlam = np.array([np.zeros(x.shape) for x in lam])
 mcur = np.array([np.zeros(x.shape) for x in lam])
 mres = np.array([np.zeros(x.shape) for x in lam])
 meqe = np.array([np.zeros(x.shape) for x in lam])
-
-nm = 'LV8_STO_25mT'
-outd[nm] = {}
 
 ivd = np.genfromtxt(wd+nm+".txt", delimiter='\t')
 
@@ -130,20 +179,24 @@ outd[nm]['R'] = 1/m1
 
 outd[nm]['eqe'] = {}
 outd[nm]['eqe']['settings'] = {
-    'bias': np.zeros(3), 
-    'sens': np.ones(3),
-    'lisens': np.ones(3),
-    'tc': np.ones(3),
-    'dwell': np.ones(3)}
+    'bias': np.zeros(5), 
+    'sens': np.ones(5),
+    'lisens': np.ones(5),
+    'tc': np.ones(5),
+    'dwell': np.ones(5)}
 
 p = DynamicPlot()
 tia.bias_volt = 1.0
+#tia.bias_curr = 5e-3
+#tia.filter_type = 1
+#tia.hp_freq = 300.0
 tia.volt_output = True
-tia.sensitivity = 10e-6
+#tia.curr_output = False
+tia.sensitivity = 1e-6
 
 dwell = lia.filter_time_constant*8
 sens = tia.sensitivity
-m = 0
+m = 4
 for idx, l in enumerate(lam[m]):
     mon.wavelength = l
     sleep(dwell)
@@ -169,6 +222,10 @@ outd[nm]['eqe']['res'] = mres
 outd[nm]['eqe']['eqe'] = meqe
 
 json_write(outd, wd+"data.json")
+
+tia.volt_output = False
+tia.curr_output = False
+tia.filter_type = 5
 tia.sensitivity = 1e-3
 mon.wavelength = 550.0
 
@@ -204,6 +261,9 @@ for k in np.arange(K):
 mon.close()
 tia_in.close()
 lia_in.close()
+
+def ftest(a, b='Defb', c='Defc'):
+    return (a, b, c)
 
 from lakeshore import LKS335
 cry_in = rm.open_resource("GPIB0::12::INSTR")
