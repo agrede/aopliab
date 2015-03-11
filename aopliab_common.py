@@ -1,10 +1,55 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import json
+import visa
+import re
 
 
 def within_limits(value, limits):
     return (value is not None and limits[0] <= value and limits[1] >= value)
+    
+
+def getInstr(rm, name, local_config='local.json'):
+    cfg_file = open(local_config)
+    cfg = json.load(cfg_file)
+    cfg_file.close()
+    if (cfg[name]['non_visa']):
+        if (cfg[name]['manufacturer'] == 'ARC'
+            and cfg[name]['model'] == 'SpecPro'):
+            return (cfg[name]['com'], cfg['dll_path'])
+    if ('conn_params' in cfg[name]):
+        conn_params = parseConnParams(cfg[name]['conn_params'])
+    else:
+        conn_params = {}
+    return rm.open_resource(cfg[name]['addr'], **conn_params)
+
+
+def parseConnParams(params):
+    if ('stop_bits' in params):
+        if (params['stop_bits'] == 1):
+            params['stop_bits'] = visa.constants.StopBits.one
+        elif (params['stop_bits'] == 1.5):
+            params['stop_bits'] = visa.constants.StopBits.one_and_a_half
+        elif (params['stop_bits'] == 2):
+            params['stop_bits'] = visa.constants.StopBits.two
+        else:
+            del(params['stop_bits'])
+    if ('read_termination' in params):
+        params['read_termination'] = "".join(
+            [parseTermString(x) for x in params['read_termination']])
+    if ('write_termination' in params):
+        params['write_termination'] = "".join(
+            [parseTermString(x) for x in params['write_termination']])
+    return params
+
+
+def parseTermString(str):
+    strs = {'NULL': '\0', 'CR': '\r', 'LF': '\n'}
+    m = re.match('<(\w+)>', str)
+    if (m and m.group(1) in strs):
+        return strs[m.group(1)]
+    else:
+        return str
 
 
 def nearest_index(value, values, rndup):
