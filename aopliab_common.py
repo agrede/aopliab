@@ -13,10 +13,10 @@ def getInstr(rm, name, local_config='local.json'):
     cfg_file = open(local_config)
     cfg = json.load(cfg_file)
     cfg_file.close()
-    if (cfg[name]['non_visa']):
-        if (cfg[name]['manufacturer'] == 'ARC'
-            and cfg[name]['model'] == 'SpecPro'):
-            return (cfg[name]['com'], cfg['dll_path'])
+    if ('non_visa' in cfg[name].keys() and cfg[name]['non_visa']):
+        if (cfg[name]['manufacturer'] == 'ARC' and
+                cfg[name]['model'] == 'SpecPro'):
+            return (cfg[name]['com'], cfg[name]['dll_path'])
     if ('conn_params' in cfg[name]):
         conn_params = parseConnParams(cfg[name]['conn_params'])
     else:
@@ -101,9 +101,16 @@ class NumpyAwareJSONEncoder(json.JSONEncoder):
             else:
                 return [self.default(obj[i]) for i in range(obj.shape[0])]
         return json.JSONEncoder.default(self, obj)
-        
 
-def json_write(obj, fp):
-    fo = open(fp, mode='w')
-    json.dump(obj, fo, cls=NumpyAwareJSONEncoder)
-    fo.close()
+
+def json_write(obj, path):
+    fp = open(path, mode='w')
+    json.dump(obj, fp, cls=NumpyAwareJSONEncoder)
+    fp.close()
+
+
+def json_load(path):
+    fp = open(path)
+    tmp = json.load(fp)
+    fp.close()
+    return tmp

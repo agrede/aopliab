@@ -86,8 +86,7 @@ class SR570():
     @bias_volt.setter
     def bias_volt(self, value):
         self._volt_bias_index = self.nearest_volt_index(value)
-        if (self._volt_bias_enabled):
-            self.inst.write("BSLV%d" % self._volt_bias_index)
+        self.inst.write("BSLV%d" % self._volt_bias_index)
 
     @property
     def volt_output(self):
@@ -116,9 +115,8 @@ class SR570():
             self._curr_bias_sign = 0
         else:
             self._curr_bias_sign = 1
-        if (self._curr_bias_enabled):
-            self.inst.write("IOSN%d;IOLV%d" % (
-                self._curr_bias_sign, self._curr_bias_index))
+        self.inst.write("IOSN%d;IOLV%d" % (
+                    self._curr_bias_sign, self._curr_bias_index))
 
     @property
     def curr_output(self):
