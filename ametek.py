@@ -38,6 +38,9 @@ class SR7230():
         self.inst.read_raw()
         self.inst.read_raw()
 
+    def close(self):
+        self.inst.close()
+
     @property
     def imode(self):
         return int(self.query("IMODE")[0])

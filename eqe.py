@@ -69,18 +69,24 @@ def measureResponse(lam, mon, lia, dwell, plot=None, N=1, tia=None,
 def brk_wavelength(start, stop, step, filters, overlap=3):
     if (len(filters) < 1):
         return [np.arange(start, stop+step, step)]
+    if (overlap < 0):
+        overlap = 0
+    overlap = overlap+1
     rtn = []
     last_stop = start
-    for filt in filters:
-        tstart = last_stop-(overlap-1)*step
-        tstop = filt+overlap*step
-        last_stop = filt
+    for filt in filters[1:]:
+        tstart = last_stop-np.floor(overlap/2.0)*step
+        tstop = last_stop+np.ceil((filt-last_stop)/step+overlap/2.0)*step
+        last_stop = np.ceil((filt-last_stop)/step+1)*step+last_stop
         if (tstart < start):
             tstart = start
         if (tstop > stop + step):
             tstop = stop + step
             last_stop = stop
         rtn.append(np.arange(tstart, tstop, step))
+    if (last_stop < stop):
+        tstart = last_stop-(overlap-1)*step
+        rtn.append(np.arange(tstart, stop+step, step))
     return rtn
 
 

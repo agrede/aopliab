@@ -36,6 +36,10 @@ class SR570():
         self.freqs = np.array(self.config['frequencies'])
         self.currs = np.array(self.config['currents'])
         self.senss = np.array(self.config['sensitivities'])
+        self.sensitivity = 1e-3
+
+    def close(self):
+        self.inst.close()
 
     def nearest_volt_index(self, v):
         if (abs(int(v*1e3)) > 5000):

@@ -48,6 +48,9 @@ class K2400():
         self.delay = None
         self.trigger_count = None
 
+    def close(self):
+        self.inst.close()
+
     @property
     def output(self):
         return self._output
@@ -194,6 +197,9 @@ class K6485:
         self.range_auto_ulimit = None
         self.trigger_count = None
         self.delay = None
+
+    def close(self):
+        self.inst.close()
 
     def zero_check(self):
         self.inst.write("SYST:ZCH ON")

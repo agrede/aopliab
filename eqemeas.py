@@ -55,6 +55,7 @@ class EqeUi(QtGui.QMainWindow):
         self.filters_aval = eqe.get_filters()
         self.filters_curr = []
         self.filter_button.clicked.connect(self.setFilters)
+        self.overlap = 3
 
         self.start_button.clicked.connect(self.runMeasure)
         self.lines, = self.main_plot.axes.plot([], [], 'o-')
@@ -68,7 +69,8 @@ class EqeUi(QtGui.QMainWindow):
         lstart = float(self.wavelength_start.text())
         lstep = float(self.wavelength_step.text())
         lstop = float(self.wavelength_end.text())
-        lam = eqe.brk_wavelength(lstart, lstop, lstep, self.filters_curr)
+        lam = eqe.brk_wavelength(lstart, lstop, lstep, self.filters_curr,
+                                 overlap=self.overlap)
 
         meas = {}
         meas['settings'] = {}
@@ -77,6 +79,7 @@ class EqeUi(QtGui.QMainWindow):
         meas['settings']['lia_sens'] = np.zeros(len(lam))
         meas['settings']['wavelength'] = lam
         N = 1
+        meas['mlam'] = np.array([np.zeros(x.size) for x in lam])
         meas['cur'] = np.array([np.zeros((x.size, N)) for x in lam])
         meas['phas'] = np.array([np.zeros((x.size, N)) for x in lam])
         if (self.tia is not None):
@@ -84,7 +87,21 @@ class EqeUi(QtGui.QMainWindow):
             meas['settings']['tia_sens'] = np.zeros(len(lam))
             meas['settings']['tia_volt'] = np.zeros(len(lam))
             meas['settings']['tia_cur'] = np.zeros(len(lam))
+
+        if (len(self.filters_curr) > 0):
+            meas['settings']['filters'] = np.zeros(len(lam))
+
         for k, l in enumerate(lam):
+            if (len(lam) > 1):
+                reply = QtGui.QMessageBox.question(
+                    self, 'Change Filter',
+                    "Change Filter to %d nm" % self.filters_curr[k],
+                    QtGui.QMessageBox.Yes |
+                    QtGui.QMessageBox.No, QtGui.QMessageBox.Yes)
+                if reply == QtGui.QMessageBox.No:
+                    break
+                meas['settings']['filters'][k] = self.filters_curr[k]
+
             dwell = 8*self.lia.filter_time_constant
             if (self.tia is not None):
                 if (self.tia.curr_output):
@@ -98,6 +115,7 @@ class EqeUi(QtGui.QMainWindow):
             res = eqe.measureResponse(l, self.mon, self.lia, dwell, N=1,
                                       tia=self.tia, plot=self.updatePlot)
             meas = eqe.merge_meas(meas, res, k)
+
         fileName = QtGui.QFileDialog.getSaveFileName(
             self, 'Save Measurement', '')
         json_write(meas, fileName)
@@ -137,10 +155,12 @@ class EqeUi(QtGui.QMainWindow):
     def setFilters(self):
         tafilt = ["%d" % x for x in self.filters_aval]
         tcfilt = ["%d" % x for x in self.filters_curr]
-        afilt, cfilt, ok = FilterViewer.getFilters(tafilt, tcfilt)
+        ovr, afilt, cfilt, ok = FilterViewer.getFilters(self.overlap,
+                                                        tafilt, tcfilt)
         if (ok):
             self.filters_aval = [int(x) for x in afilt]
             self.filters_curr = [int(x) for x in cfilt]
+            self.overlap = ovr
 
     def enableTia(self):
         if (self.tia_enable.isChecked()):
@@ -186,15 +206,39 @@ class EqeUi(QtGui.QMainWindow):
         if (self.tia is not None):
             self.tia.cur_output = self.cur_enable.isChecked()
 
+    def closeEvent(self, event):
+        self.mon.close()
+        self.lia.close()
+        if (self.tia is not None):
+            self.tia.close()
+        event.accept()
+
 
 class FilterViewer(QtGui.QDialog):
-    def __init__(self, afilt, cfilt, parent=None):
+    def __init__(self, ovr, afilt, cfilt, parent=None):
         super(FilterViewer, self).__init__()
         uic.loadUi('filter_view.ui', self)
+        validator = QtGui.QIntValidator()
         self.btn_add.clicked.connect(self.addFilter)
         self.btn_rem.clicked.connect(self.remFilter)
         self.set_avalible_filters(afilt)
         self.set_current_filters(cfilt)
+        self.overlap.setValidator(validator)
+        self.overlap.textChanged.connect(self.check_state)
+        self.overlap.textChanged.emit(self.overlap.text())
+        self.overlap.setText("%d" % ovr)
+
+    def check_state(self, *args, **kwargs):
+        sender = self.sender()
+        validator = sender.validator()
+        state = validator.validate(sender.text(), 0)[0]
+        if state == QtGui.QValidator.Acceptable:
+            color = '#c4df9b'  # green
+        elif state == QtGui.QValidator.Intermediate:
+            color = '#fff79a'  # yellow
+        else:
+            color = '#f6989d'  # red
+        sender.setStyleSheet('QLineEdit { background-color: %s }' % color)
 
     def set_avalible_filters(self, filters):
         self.avalibleFilters.clear()
@@ -229,12 +273,20 @@ class FilterViewer(QtGui.QDialog):
                 self.usedFilters.item(y) for y in range(
                     len(self.usedFilters))]])
 
+    def ovrlap(self):
+        if (self.overlap.hasAcceptableInput()):
+            return int(self.overlap.text())
+        else:
+            return 3
+
     @staticmethod
-    def getFilters(afilt, cfilt, parent=None):
-        dialog = FilterViewer(afilt, cfilt, parent=parent)
+    def getFilters(ovr, afilt, cfilt, parent=None):
+        dialog = FilterViewer(ovr, afilt, cfilt, parent=parent)
         result = dialog.exec_()
         (afilt, cfilt) = dialog.filters()
-        return (afilt, cfilt, result == QtGui.QDialog.Accepted)
+        ovr = dialog.ovrlap()
+        return (ovr, afilt, cfilt, result == QtGui.QDialog.Accepted)
+
 
 if __name__ == '__main__':
     app = QtGui.QApplication(sys.argv)

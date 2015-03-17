@@ -1,49 +1,61 @@
 {
-	"Monochromator": {
-		"manufacturer": "ARC",
-		"model": "SpecPro",
-		"com": 4,
-		"dll_path": "C:\\Program Files (x86)\\Princeton Instruments\\MonoControl\\ARC_SpectraPro.dll",
-		"non_visa": true
-	},
-	"TransImpedanceAmp": {
-		"manufacturer": "SRS",
-		"model": "SR570",
-		"addr": "ASRL1::INSTR",
-		"conn_params": {
-			"baud_rate": 9600, 
-			"data_bits": 8, 
-			"stop_bits": 2,
-			"write_termination": ["<CR>", "<LF>"]
-		}
-	},
-	"LockInAmp": {
-		"manufacturer": "Ametek",
-		"model": "SR7230",
-		"addr": "TCPIP::169.254.150.230::50000::SOCKET",
-		"conn_params": {
-			"read_termination": ["<NULL>"],
-			"write_termination": ["<NULL>"]
-		}
-	},
-	"CryoTemp": {
-		"manufacturer": "Lakeshore",
-		"model": "LKS355",
-		"addr": "GPIB0::12::INSTR"
-	},
-	"SMU": {
-		"manufacturer": "Keithely",
-		"model": "K2400",
-		"addr": "GPIB0::24::INSTR"
-	},
-	"PAM": {
-		"manufacturer": "Keithely",
-		"model": "K2400",
-		"addr": "GPIB0::14::INSTR"
-	},
-	"FilterWheel": {
-		"manufacturer": "ThorLabs",
-		"model": "Manual6",
-		"filters": [550, 695, 830]
-	}
+    "Monochromator": {
+        "manufacturer": "ARC",
+        "model": "SpecPro",
+        "com": 4,
+        "dll_path": "C:\\Program Files (x86)\\Princeton Instruments\\MonoControl\\ARC_SpectraPro.dll",
+        "non_visa": true
+    },
+    "TransImpedanceAmp": {
+        "manufacturer": "SRS",
+        "model": "SR570",
+        "addr": "ASRL1::INSTR",
+        "conn_params": {
+            "baud_rate": 9600,
+            "data_bits": 8,
+            "stop_bits": 2,
+            "write_termination": ["<CR>", "<LF>"]
+        }
+    },
+    "LockInAmp": {
+        "manufacturer": "Ametek",
+        "model": "SR7230",
+        "addr": "TCPIP::169.254.150.230::50000::SOCKET",
+        "conn_params": {
+            "read_termination": ["<NULL>"],
+            "write_termination": ["<NULL>"]
+        }
+    },
+    "CryoTemp": {
+        "manufacturer": "Lakeshore",
+        "model": "LKS355",
+        "addr": "GPIB0::12::INSTR"
+    },
+    "SMU": {
+        "manufacturer": "Keithely",
+        "model": "K2400",
+        "addr": "GPIB0::24::INSTR"
+    },
+    "PAM": {
+        "manufacturer": "Keithely",
+        "model": "K2400",
+        "addr": "GPIB0::14::INSTR"
+    },
+    "OpticalChopper": {
+        "manufacturer": "Thorlabs",
+        "model": "MC2000",
+        "addr": "ASRL12::INSTR",
+        "conn_params": {
+            "baud_rate": 115200,
+            "data_bits": 8,
+            "stop_bits": 1,
+            "write_termination": ["<CR>"],
+            "read_termination": ["<CR>", "> "]
+        }
+    },
+    "FilterWheel": {
+        "manufacturer": "ThorLabs",
+        "model": "Manual6",
+        "filters": [0, 550, 695, 830]
+    }
 }
