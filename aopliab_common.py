@@ -7,7 +7,7 @@ import re
 
 def within_limits(value, limits):
     return (value is not None and limits[0] <= value and limits[1] >= value)
-    
+
 
 def getInstr(rm, name, local_config='local.json'):
     cfg_file = open(local_config)

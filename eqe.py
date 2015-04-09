@@ -90,6 +90,15 @@ def brk_wavelength(start, stop, step, filters, overlap=3):
     return rtn
 
 
+def get_pds(cal_file="calibrations.json"):
+    cal = json_load(cal_file)
+    pds = cal['PhotoDiodes']
+    for mod, pdm in pds.items():
+        for sn, r in pdm['responsivity'].items():
+            pds[mod]['responsivity'][sn] = np.array(r)
+    return pds
+
+
 def merge_meas(dtaold, dtanew, idx):
     for key, val in dtanew.items():
         if key not in dtaold.keys():
@@ -228,15 +237,15 @@ def get_filters():
 #
 #outd[nm]['eqe'] = {}
 #outd[nm]['eqe']['settings'] = {
-#    'bias': np.zeros(5), 
+#    'bias': np.zeros(5),
 #    'sens': np.ones(5),
 #    'lisens': np.ones(5),
 #    'tc': np.ones(5),
 #    'dwell': np.ones(5)}
 #
 #p = DynamicPlot()
-#tia.bias_volt = 1.0
 ##tia.bias_curr = 5e-3
+#tia.bias_volt = 1.0
 ##tia.filter_type = 1
 ##tia.hp_freq = 300.0
 #tia.volt_output = True
