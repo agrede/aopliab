@@ -24,7 +24,7 @@ class MC2000():
     def query(self, value):
         tmp = self.inst.query(value)
         return float(self._qrx.match(tmp).group(1))
-        
+
     def write(self, value):
         self.inst.write(value)
         self.inst.read_raw()
@@ -127,3 +127,31 @@ class MC2000():
     def display(self, value):
         if (within_limits(value, self._display_limits)):
             self.write('intensity=%d' % value)
+
+
+    class PM100D():
+        """
+        PyVISA driver for PM100D power meter
+        """
+
+        def __init__(self, inst):
+            self.inst = inst
+
+        @property
+        def wavelength_range(self):
+            mn = self.inst.query_ascii_values("WAV? MIN")[0]
+            mx = self.inst.query_ascii_values("WAV? MAX")[0]
+            return [mn, mx]
+
+        @property
+        def wavelength(self):
+            return self.inst.query_ascii_values("WAV?")[0]
+
+        @wavelength.setter
+        def wavelength(self, value):
+            if within_limits(value, self.wavelength_range):
+                self.inst.write("WAV %d" % value)
+
+        @property
+        def power(self):
+            return self.inst.query_ascii_values("READ?")[0]
