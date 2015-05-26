@@ -33,7 +33,8 @@ class K2400():
         self.inst = inst
         self.inst.write("*RST; *CLS")
         self.inst.write("STAT:MEAS:ENAB 512; *SRE 1")
-        self.inst.write("TRAC:FEED SENS; TRAC:FEED:CONT NEXT")
+        self.inst.write("TRAC:FEED SENS")
+        self.inst.write("TRAC:FEED:CONT NEXT")
         self.inst.write("SOUR:FUNC VOLT")
         self.inst.write("FUNC:CONC ON")
         self.inst.write("FUNC 'VOLT', 'CURR'")
