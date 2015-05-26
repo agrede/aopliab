@@ -34,7 +34,7 @@
     "SMU": {
         "manufacturer": "Keithely",
         "model": "K2400",
-        "addr": "GPIB0::24::INSTR"
+        "addr": "GPIB0::23::INSTR"
     },
     "PAM": {
         "manufacturer": "Keithely",
@@ -56,6 +56,11 @@
     "FilterWheel": {
         "manufacturer": "ThorLabs",
         "model": "Manual6",
-        "filters": [0, 550, 695, 830]
+        "filters": [0, 400, 550, 830]
+    },
+    "OScope": {
+        "manufacturer": "Keysight",
+        "model": "DSO5014A",
+        "addr": "USB0::0x0957::0x1765::MY48200170::INSTR"
     }
 }
