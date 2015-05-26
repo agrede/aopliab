@@ -129,29 +129,29 @@ class MC2000():
             self.write('intensity=%d' % value)
 
 
-    class PM100D():
-        """
-        PyVISA driver for PM100D power meter
-        """
+class PM100D():
+    """
+    PyVISA driver for PM100D power meter
+    """
 
-        def __init__(self, inst):
-            self.inst = inst
+    def __init__(self, inst):
+        self.inst = inst
 
-        @property
-        def wavelength_range(self):
-            mn = self.inst.query_ascii_values("WAV? MIN")[0]
-            mx = self.inst.query_ascii_values("WAV? MAX")[0]
-            return [mn, mx]
+    @property
+    def wavelength_range(self):
+        mn = self.inst.query_ascii_values("CORR:WAV? MIN")[0]
+        mx = self.inst.query_ascii_values("CORR:WAV? MAX")[0]
+        return [mn, mx]
 
-        @property
-        def wavelength(self):
-            return self.inst.query_ascii_values("WAV?")[0]
+    @property
+    def wavelength(self):
+        return self.inst.query_ascii_values("CORR:WAV?")[0]
 
-        @wavelength.setter
-        def wavelength(self, value):
-            if within_limits(value, self.wavelength_range):
-                self.inst.write("WAV %d" % value)
+    @wavelength.setter
+    def wavelength(self, value):
+        if within_limits(value, self.wavelength_range):
+            self.inst.write("CORR:WAV %d" % value)
 
-        @property
-        def power(self):
-            return self.inst.query_ascii_values("READ?")[0]
+    @property
+    def power(self):
+        return self.inst.query_ascii_values("READ?")[0]

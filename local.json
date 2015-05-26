@@ -34,6 +34,11 @@
     "SMU": {
         "manufacturer": "Keithely",
         "model": "K2400",
+        "addr": "GPIB0::24::INSTR"
+    },
+    "LasPow": {
+        "manufacturer": "Keithely",
+        "model": "K2400",
         "addr": "GPIB0::23::INSTR"
     },
     "PAM": {
@@ -62,5 +67,10 @@
         "manufacturer": "Keysight",
         "model": "DSO5014A",
         "addr": "USB0::0x0957::0x1765::MY48200170::INSTR"
+    },
+    "PowMeter": {
+        "manufacturer": "ThorLabs",
+        "model": "PM100D",
+        "addr": "USB0::0x1313::0x8078::P0004031::INSTR"
     }
 }

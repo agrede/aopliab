@@ -1,4 +1,4 @@
-from pyvd_common import within_limits
+from aopliab_common import within_limits
 
 
 class LKS335():
