@@ -88,7 +88,7 @@ class InfiniiVision5000():
         if (pre[0] == 4):
             return self.inst.query_ascii_values("WAV:DATA?")
         elif (pre[0] == 1):
-            typ = 'w'
+            typ = 'h'
         wav = self.inst.query_binary_values("WAV:DATA?", datatype=typ)
         return (np.array(wav)-pre[9])*pre[7]+pre[8]
 
