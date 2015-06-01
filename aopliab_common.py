@@ -66,10 +66,17 @@ def nearest_index(value, values, rndup):
 
 
 class DynamicPlot():
-    def __init__(self):
+    def __init__(self, ptype="plot", lstyle="o-"):
         #Set up plot
         self.figure, self.ax = plt.subplots()
-        self.lines, = self.ax.plot([],[], 'o-')
+        if (ptype is "loglog"):
+            self.lines, = self.ax.loglog([],[], lstyle)
+        elif (ptype is "semilogy"):
+            self.lines, = self.ax.semilogy([],[], lstyle)
+        elif (ptype is "semilogx"):
+            self.lines, = self.ax.semilogx([],[], lstyle)
+        else:
+            self.lines, = self.ax.plot([],[], lstyle)
         #Autoscale on unknown axis and known lims on the other
         self.ax.set_autoscale_on(True)
 
