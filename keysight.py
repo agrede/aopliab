@@ -83,7 +83,14 @@ class InfiniiVision5000():
 
     @property
     def voltages(self):
-        pass
+        pre = self.preamble
+        typ = 'b'
+        if (pre[0] == 4):
+            return self.inst.query_ascii_values("WAV:DATA?")
+        elif (pre[0] == 1):
+            typ = 'w'
+        wav = self.inst.query_binary_values("WAV:DATA?", datatype=typ)
+        return (np.array(wav)-pre[9])*pre[7]+pre[8]
 
     @property
     def times(self):
