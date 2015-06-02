@@ -78,7 +78,7 @@ def themeasure(path, smu, las, cry, pm, pltvoc, pltiv,
     return res
 
 
-def voc(smu, drift_acc=0.005, drift_t=0.5, tmax=120.0):
+def voc(smu, drift_acc=0.001, drift_t=0.5, tmax=120.0):
     smu.set_current(0.0)
     smu.output = True
     t0 = time.time()
@@ -92,3 +92,18 @@ def voc(smu, drift_acc=0.005, drift_t=0.5, tmax=120.0):
         voc = smu.measurement()[0]
     smu.output = False
     return voc
+
+
+def laserVoc(smu, las, pm, lascur, plt=None, lascor=1.0):
+    lp = np.zeros(lascur.shape)
+    vo = np.zeros(lascur.shape)
+    las.set_current(lascur[0])
+    las.output = True
+    for k, lc in enumerate(lascur):
+        las.set_current(lc)
+        vo[k] = voc(smu)
+        lp[k] = pm.power*lascor
+        if plt is not None:
+            plt.update(abs(lp[k]), vo[k])
+    las.output = False
+    return (lp, vo)
