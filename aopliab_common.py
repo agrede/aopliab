@@ -66,24 +66,40 @@ def nearest_index(value, values, rndup):
 
 
 class DynamicPlot():
+
+    lines = []
+    ptype = "plot"
+    dlstyle = "o-"
+
     def __init__(self, ptype="plot", lstyle="o-"):
-        #Set up plot
+        self.ptype = ptype
+        self.dlstyle = lstyle
+        # Set up plot
         self.figure, self.ax = plt.subplots()
-        if (ptype is "loglog"):
-            self.lines, = self.ax.loglog([],[], lstyle)
-        elif (ptype is "semilogy"):
-            self.lines, = self.ax.semilogy([],[], lstyle)
-        elif (ptype is "semilogx"):
-            self.lines, = self.ax.semilogx([],[], lstyle)
-        else:
-            self.lines, = self.ax.plot([],[], lstyle)
+        self.addnew()
         #Autoscale on unknown axis and known lims on the other
         self.ax.set_autoscale_on(True)
 
+    def addnew(self, ptype=None, lstyle=None):
+        if ptype is None:
+            ptype = self.ptype
+        if lstyle is None:
+            lstyle = self.dlstyle
+        if (ptype is "loglog"):
+            tline, = self.ax.loglog([], [], lstyle)
+        elif (ptype is "semilogy"):
+            tline, = self.ax.semilogy([], [], lstyle)
+        elif (ptype is "semilogx"):
+            tline, = self.ax.semilogx([], [], lstyle)
+        else:
+            tline, = self.ax.plot([], [], lstyle)
+        self.lines.append(tline)
+
     def update(self, newx, newy):
+        k = len(self.lines)-1
         #Update data (with the new _and_ the old points)
-        self.lines.set_xdata(np.append(self.lines.get_xdata(), newx))
-        self.lines.set_ydata(np.append(self.lines.get_ydata(), newy))
+        self.lines[k].set_xdata(np.append(self.lines[k].get_xdata(), newx))
+        self.lines[k].set_ydata(np.append(self.lines[k].get_ydata(), newy))
         #Need both of these in order to rescale
         self.ax.relim()
         self.ax.autoscale_view()
@@ -92,8 +108,11 @@ class DynamicPlot():
         self.figure.canvas.flush_events()
 
     def clear(self):
-        self.lines.set_xdata([])
-        self.lines.set_ydata([])
+        for k in range(len(self.lines)):
+            self.lines[k].set_xdata([])
+            self.lines[k].set_ydata([])
+        self.lines = []
+        self.addnew()
         self.ax.relim()
         self.ax.autoscale_view()
         self.figure.canvas.draw()
