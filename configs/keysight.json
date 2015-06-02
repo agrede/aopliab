@@ -1,0 +1,7 @@
+{
+    "InfiniiVision5000": {
+        "acqtypes": ["NORM", "AVER", "HRES", "PEAK"],
+        "formats": ["WORD", "BYTE", "ASC"],
+        "points_modes": ["NORM", "MAX", "RAW"]
+    }
+}

@@ -1,5 +1,5 @@
 import re
-from aopliab_common import within_limits
+from aopliab_common import within_limits, json_load
 import numpy as np
 
 
@@ -13,6 +13,8 @@ class InfiniiVision5000():
     def __init__(self, inst):
         self.inst = inst
         self.inst.write("*RST; *CLS")
+        cfg = json_load('configs/keysight.json')
+        self.config = cfg['InfiniiVision5000']
 
     @property
     def acq_type(self):
@@ -84,6 +86,7 @@ class InfiniiVision5000():
     @property
     def voltages(self):
         pre = self.preamble
+        self.inst.write("DIG 1")
         typ = 'b'
         if (pre[0] == 4):
             return self.inst.query_ascii_values("WAV:DATA?")
