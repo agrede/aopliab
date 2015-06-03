@@ -1,4 +1,4 @@
-from aopliab_common import within_limits
+from aopliab_common import within_limits, json_load
 import json
 import numpy as np
 import re
@@ -155,3 +155,81 @@ class PM100D():
     @property
     def power(self):
         return self.inst.query_ascii_values("READ?")[0]
+
+
+class CLD1015():
+    """
+    PyVISA wrapper for CLD1015 laser controler
+    """
+
+    def __init__(self, inst):
+        self.inst = inst
+        cfg = json_load("configs/thorlabs.json")
+        self.config = cfg['CLD1015']
+
+    @property
+    def current_mode(self):
+        return (self.query("SOUR:FUNC?") is "CURR\n")
+
+    @current_mode.setter
+    def current_mode(self, value):
+        if (not self.output):
+            if (value):
+                self.inst.write("SOUR:FUNC CURR")
+            else:
+                self.inst.write("SOUR:FUNC POW")
+
+    @property
+    def output(self):
+        return (self.inst.query_ascii_values("OUTP?")[0] == 1.0)
+
+    @output.setter
+    def output(self, value):
+        if (value):
+            self.inst.write("OUTP 1")
+        else:
+            self.inst.write("OUTP 0")
+
+    @property
+    def current_limits(self):
+        return [self.inst.query_ascii_values("SOUR:LIM? MIN")[0],
+                self.inst.query_ascii_values("SOUR:LIM? MAX")[0]]
+
+    @property
+    def power_limits(self):
+        return [self.inst.query_ascii_values("SOUR:POW? MIN")[0],
+                self.inst.query_ascii_values("SOUR:POW? MAX")[0]]
+
+    @property
+    def current(self):
+        if (self.current_mode):
+            return self.inst.query_ascii_values("SOUR:CURR?")[0]
+        elif (self.output):
+            return self.query_ascii_values("MEAS:CURR?")[0]
+
+    @current.setter
+    def current(self, value):
+        if within_limits(value, self.current_limits):
+            self.inst.write("SOUR:CURR %f" % value)
+
+    def set_current(self, value):
+        """ legacy """
+        self.current = value
+
+    @property
+    def power(self):
+        if (not self.current_mode):
+            return self.query_ascii_values("SOUR:POW?")[0]
+        elif (self.output):
+            return self.query_ascii_values("MEAS:POW?")[0]
+        else:
+            return 0.0
+
+    @power.setter
+    def power(self, value):
+        if within_limits(value, self.power_limits):
+            self.inst.write("SOUR:POW %f" % value)
+
+    @property
+    def temperature(self):
+        return self.inst.write("MEAS:TEMP?")
