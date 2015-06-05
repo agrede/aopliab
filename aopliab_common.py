@@ -119,6 +119,12 @@ class DynamicPlot():
         self.figure.canvas.flush_events()
 
 
+def get_limits(inst, query):
+    return [
+        inst.query_ascii_values(query+"? MIN")[0],
+        inst.query_ascii_values(query+"? MAX")[0]]
+
+
 class NumpyAwareJSONEncoder(json.JSONEncoder):
     def default(self, obj):
         if isinstance(obj, np.ndarray):
