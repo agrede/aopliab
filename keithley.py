@@ -1,14 +1,8 @@
 import re
+from aopliab_common import within_limits, json_load, get_limits
+import numpy as np
+import time
 
-
-def get_limits(inst, query):
-    return [
-        inst.query_ascii_values(query+"? MIN")[0],
-        inst.query_ascii_values(query+"? MAX")[0]]
-
-def within_limits(value, limits):
-    return (value is not None and limits[0] <= value and limits[1] >= value)
-    
 
 class K2400():
     """
@@ -164,11 +158,11 @@ class K2485:
         else:
             self._integ_cycles = self.inst.query_ascii_values("NPLC? DEF")[0]
         self.inst.write("NPLC %f" % self._integ_cycles)
-    
+
     @property
     def range_auto_ulimit(self):
         return self._auto_range_ulimit
-        
+
     @range_auto_ulimit.setter
     def range_auto_ulimit(self, value):
         if (within_limits(value, self.auto_range_ulimits)):
@@ -177,8 +171,8 @@ class K2485:
             self._auto_range_ulimit = self.inst.query_ascii_values(
                 "RANG:AUTO:ULIM? DEF")[0]
         self.inst.write("RANG:AUTO:ULIM %f" % self._auto_range_ulimit)
-                
-    @property 
+
+    @property
     def range_auto_llimit(self):
         return self._auto_range_llimit
 
@@ -196,6 +190,323 @@ class K2485:
 
     def read(self):
         return [float(x) for x in re.split("A?,", self.inst.query("DATA?"))]
-        
+
     def measurement(self):
         return [float(x) for x in re.split("A?,", self.inst.query("READ?"))]
+
+
+class K6430():
+    """
+    PyVISA wrapper for K6430 Sub-femptoamp SMU
+    """
+
+    def __init__(self, inst):
+        self.inst = inst
+        cfg = json_load("config/keithley.json")
+        self.config = cfg['K6430']
+
+    @property
+    def output(self):
+        return (int(self.inst.query_ascii_values("OUTP?")[0]) == 1)
+
+    @output.setter
+    def output(self, value):
+        if (value):
+            self.inst.write("OUTP 1")
+        else:
+            self.inst.write("OUTP 0")
+
+    @property
+    def offmode(self):
+        smode = self.inst.query("OUTP:SMOD?")
+        k = np.where(smode.upper().startswith(tuple(self.config['smodes'])))[0]
+        if (k.size > 0):
+            return self.config['smodes'][k[0]]
+
+    @offmode.setter
+    def offmode(self, value):
+        k = np.where(value.upper().startswith(tuple(self.config['smodes'])))[0]
+        if (k.size > 0):
+            self.inst.write("OUTP:SMOD %s" % self.config['smodes'][k[0]])
+
+    @property
+    def concurrent(self):
+        return (int(self.inst.query_ascii_values("SENS:CONC?")[0]) == 1)
+
+    @concurrent.setter
+    def concurrent(self, value):
+        if (value):
+            self.inst.write("FUNC:CONC 1")
+        else:
+            self.inst.write("FUNC:CONC 0")
+
+    @property
+    def sense(self):
+        return np.array(self.inst.query("FUNC?").split(","))
+
+    @sense.setter
+    def sense(self, value):
+        if (type(value) is not np.ndarray):
+            value = np.array([value])
+        funcs = []
+        for v in value:
+            k = np.where(
+                v.upper().startswith(tuple(self.config['functions'])))[0]
+            if (k.size > 0 and self.config['functions'][k] not in funcs):
+                funcs.append(self.config['functions'][k])
+        if (len(funcs) > 0):
+            self.inst.write("FUNC '%s'" % "','".join(funcs))
+
+    @property
+    def auto_voltage(self):
+        return (int(self.inst.query_ascii_values("VOLT:RANG:AUTO?")[0]) == 1)
+
+    @auto_voltage.setter
+    def auto_voltage(self, value):
+        if (value):
+            self.inst.write("VOLT:RANG:AUTO 1")
+        else:
+            self.inst.write("VOLT:RANG:AUTO 0")
+
+    @property
+    def auto_current(self):
+        return (int(self.inst.query_ascii_values("CURR:RANG:AUTO?")[0]) == 1)
+
+    @auto_current.setter
+    def auto_current(self, value):
+        if (value):
+            self.inst.write("CURR:RANG:AUTO 1")
+        else:
+            self.inst.write("CURR:RANG:AUTO 0")
+
+    @property
+    def auto_resistance(self):
+        return (int(self.inst.query_ascii_values("RES:RANG:AUTO?")[0]) == 1)
+
+    @auto_resistance.setter
+    def auto_resistance(self, value):
+        if (value):
+            self.inst.write("RES:RANG:AUTO 1")
+        else:
+            self.inst.write("RES:RANG:AUTO 0")
+
+    @property
+    def voltage_limit_range(self):
+        return get_limits(self.inst, "VOLT:PROT")
+
+    @property
+    def voltage_limit(self):
+        return self.inst.query_ascii_values("VOLT:PROT?")[0]
+
+    @voltage_limit.setter
+    def voltage_limit(self, value):
+        if (within_limits(value, self.voltage_limit_range)):
+            self.inst.write("VOLT:PROT %f" % value)
+
+    @property
+    def current_limit_range(self):
+        return get_limits(self.inst, "CURR:PROT")
+
+    @property
+    def current_limit(self):
+        return self.inst.query_ascii_values("CURR:PROT?")[0]
+
+    @current_limit.setter
+    def current_limit(self, value):
+        if (within_limits(value, self.voltage_limit_range)):
+            self.inst.write("CURR:PROT %f" % value)
+
+    @property
+    def nplcycles_range(self):
+        return get_limits(self.inst, "CURR:NPLC")
+
+    @property
+    def nplcycles(self):
+        return (self.inst.query_ascii_values("CURR:NPLC?")[0])
+
+    @nplcycles.setter
+    def nplcycles(self, value):
+        if (within_limits(value, self.nplcycles_range)):
+            self.inst.write("CURR:NPLC %f" % value)
+
+    @property
+    def auto_average(self):
+        return (int(self.inst.query_ascii_values("AVER:AUTO?"))[0] == 1)
+
+    @auto_average.setter
+    def auto_average(self, value):
+        if (value):
+            self.inst.write("AVER:AUTO 1")
+        else:
+            self.inst.write("AVER:AUTO 0")
+
+    @property
+    def average_repeat_count_range(self):
+        return get_limits(self.inst, "AVER:REP:COUN")
+
+    @property
+    def average_repeat_count(self):
+        return int(self.inst.query_ascii_values("AVER:REP:COUN?")[0])
+
+    @average_repeat_count.setter
+    def average_repeat_count(self, value):
+        if within_limits(value, self.average_repeat_count_range):
+            self.inst.write("AVER:REP:COUN %d" % value)
+
+    @property
+    def average_repeat(self):
+        return (int(self.inst.query_ascii_values("AVER:REP?"))[0] == 1)
+
+    @average_repeat.setter
+    def average_repeat(self, value):
+        if (value):
+            self.inst.write("AVER:REP 1")
+        else:
+            self.inst.write("AVER:REP 0")
+
+    @property
+    def median_rank(self):
+        return int(self.inst.query_ascii_values("MED:RANK?")[0])
+
+    @median_rank.setter
+    def median_rank(self, value):
+        if within_limits(value, [0, 5]):
+            self.inst.write("MED:RANK %d" % value)
+
+    @property
+    def median(self):
+        return (int(self.inst.query_ascii_values("MED?")[0]) == 1)
+
+    @median.setter
+    def median(self, value):
+        if (value):
+            self.inst.write("MED 1")
+        else:
+            self.inst.write("MED 0")
+
+    @property
+    def average_count_range(self):
+        return int(get_limits(self.inst, "AVER:COUN"))
+
+    @property
+    def average_count(self):
+        return int(self.inst.query_ascii_values("AVER:COUN?")[0])
+
+    @average_count.setter
+    def average_count(self, value):
+        if within_limits(value, self.average_count_range):
+            self.inst.write("AVER:COUN %d" % value)
+
+    @property
+    def average(self):
+        return (int(self.inst.query_ascii_values("AVER?")[0]) == 1)
+
+    @average.setter
+    def average(self, value):
+        if (value):
+            self.inst.write("AVER 1")
+        else:
+            self.inst.write("AVER 0")
+
+    @property
+    def source_voltage(self):
+        return (self.inst.query("SOUR:FUNC?") == "VOLT\n")
+
+    @source_voltage.setter
+    def source_voltage(self, value):
+        if (value):
+            self.inst.write("SOUR:FUNC VOLT")
+        else:
+            self.inst.write("SOUR:FUNC CURR")
+
+    @property
+    def voltage_range_range(self):
+        return get_limits(self.inst, "SOUR:VOLT:RANG")
+
+    @property
+    def voltage_range(self):
+        return self.inst.query_ascii_values("SOUR:VOLT:RANG?")[0]
+
+    @voltage_range.setter
+    def voltage_range(self, value):
+        if within_limits(value, self.voltage_range_range):
+            self.inst.write("SOUR:VOLT:RANG %f" % value)
+
+    @property
+    def auto_voltage_range(self):
+        return (
+            int(self.inst.query_ascii_values("SOUR:VOLT:RANG:AUTO?"))[0] == 1)
+
+    @auto_voltage_range.setter
+    def auto_voltage_range(self, value):
+        if (value):
+            self.inst.write("SOUR:VOLT:RANG:AUTO 1")
+        else:
+            self.inst.write("SOUR:VOLT:RANG:AUTO 0")
+
+    @property
+    def current_range_range(self):
+        return get_limits(self.inst, "SOUR:CURR:RANG")
+
+    @property
+    def current_range(self):
+        return self.inst.query_ascii_values("SOUR:CURR:RANG?")[0]
+
+    @current_range.setter
+    def current_range(self, value):
+        if within_limits(value, self.current_range_range):
+            self.inst.write("SOUR:CURR:RANG %f" % value)
+
+    @property
+    def auto_current_range(self):
+        return (
+            int(self.inst.query_ascii_values("SOUR:CURR:RANG:AUTO?"))[0] == 1)
+
+    @auto_current_range.setter
+    def auto_current_range(self, value):
+        if (value):
+            self.inst.write("SOUR:CURR:RANG:AUTO 1")
+        else:
+            self.inst.write("SOUR:CURR:RANG:AUTO 0")
+
+    @property
+    def voltage_amp_range(self):
+        return get_limits(self.inst, "SOUR:VOLT")
+
+    @property
+    def voltage(self):
+        return self.inst.query_ascii_values("SOUR:VOLT?")[0]
+
+    @voltage.setter
+    def voltage(self, value):
+        if within_limits(value, self.voltage_amp_range):
+            self.inst.write("SOUR:VOLT %f" % value)
+
+    @property
+    def current_amp_range(self):
+        return get_limits(self.inst, "SOUR:CURR")
+
+    @property
+    def current(self):
+        return self.inst.query_ascii_values("SOUR:CURR?")[0]
+
+    @current.setter
+    def current(self, value):
+        if within_limits(value, self.current_amp_range):
+            self.inst.write("SOUR:CURR %f" % value)
+
+    def beep(self, time=0.5, freq=500):
+        if within_limits(freq, [65, 2e6]):
+            if within_limits(time, [0, 512/freq]):
+                self.inst.write("SYST:BEEP %f, %f", (freq, time))
+
+    def measurement(self, tmax=300):
+        self.inst.write("INIT")
+        tm = time.time() + tmax
+        opc = 0
+        while (opc < 1 or time.time() < tm):
+            opc = int(np.query_ascii_values("*OPC?")[0])
+        if (opc == 1):
+            return self.query_ascii_values("FETCH?")
+        else:
+            return None

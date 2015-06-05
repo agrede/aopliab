@@ -1,0 +1,6 @@
+{
+    "K6430": {
+        "smodes": ["NORM", "ZERO", "GUAR"],
+        "functions": ["VOLT", "CURR", "RES"]
+    }
+}
