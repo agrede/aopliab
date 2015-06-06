@@ -164,8 +164,8 @@ class CLD1015():
 
     def __init__(self, inst):
         self.inst = inst
-        cfg = json_load("configs/thorlabs.json")
-        self.config = cfg['CLD1015']
+        # cfg = json_load("configs/thorlabs.json")
+        # self.config = cfg['CLD1015']
 
     @property
     def current_mode(self):
@@ -232,4 +232,4 @@ class CLD1015():
 
     @property
     def temperature(self):
-        return self.inst.write("MEAS:TEMP?")
+        return self.inst.query_ascii_values("MEAS:TEMP?")[0]

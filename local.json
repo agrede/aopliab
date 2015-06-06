@@ -41,6 +41,11 @@
         "model": "K2400",
         "addr": "GPIB0::23::INSTR"
     },
+    "IRLaser": {
+        "manufacturer": "Thorlabs",
+        "model": "CLD1015",
+        "addr": "USB0::0x1313::0x804F::M00274401::INSTR"
+    },
     "PAM": {
         "manufacturer": "Keithely",
         "model": "K2400",
