@@ -202,12 +202,12 @@ class K6430():
 
     def __init__(self, inst):
         self.inst = inst
-        cfg = json_load("config/keithley.json")
+        cfg = json_load("configs/keithley.json")
         self.config = cfg['K6430']
 
     @property
     def output(self):
-        return (int(self.inst.query_ascii_values("OUTP?")[0]) == 1)
+        return (self.inst.query_ascii_values("OUTP?", converter=u'd')[0] == 1)
 
     @output.setter
     def output(self, value):
@@ -231,7 +231,8 @@ class K6430():
 
     @property
     def concurrent(self):
-        return (int(self.inst.query_ascii_values("SENS:CONC?")[0]) == 1)
+        return (self.inst.query_ascii_values("FUNC:CONC?",
+                                             converter=u'd')[0] == 1)
 
     @concurrent.setter
     def concurrent(self, value):
@@ -242,24 +243,35 @@ class K6430():
 
     @property
     def sense(self):
-        return np.array(self.inst.query("FUNC?").split(","))
+        tmp = self.inst.query("FUNC?").split(",")
+        funcs = []
+        for v in tmp:
+            v = v.translate({ord('"'): None, ord('\n'): None}).upper()
+            k = np.where(list(map(v.startswith, self.config['functions'])))[0]
+            if (k.size > 0 and self.config['functions'][k[0]] not in funcs):
+                funcs.append(self.config['functions'][k[0]])
+        return np.array(funcs)
 
     @sense.setter
     def sense(self, value):
-        if (type(value) is not np.ndarray):
-            value = np.array([value])
+        try:
+            value = iter(value)
+        except TypeError:
+            value = [value]
         funcs = []
         for v in value:
-            k = np.where(
-                v.upper().startswith(tuple(self.config['functions'])))[0]
-            if (k.size > 0 and self.config['functions'][k] not in funcs):
-                funcs.append(self.config['functions'][k])
+            k = np.where(list(map(
+                v.upper().startswith, self.config['functions'])))[0]
+            if (k.size > 0 and self.config['functions'][k[0]] not in funcs):
+                funcs.append(self.config['functions'][k[0]])
         if (len(funcs) > 0):
             self.inst.write("FUNC '%s'" % "','".join(funcs))
 
     @property
     def auto_voltage(self):
-        return (int(self.inst.query_ascii_values("VOLT:RANG:AUTO?")[0]) == 1)
+        return (
+            self.inst.query_ascii_values("VOLT:RANG:AUTO?",
+                                         converter=u'd')[0] == 1)
 
     @auto_voltage.setter
     def auto_voltage(self, value):
@@ -270,7 +282,9 @@ class K6430():
 
     @property
     def auto_current(self):
-        return (int(self.inst.query_ascii_values("CURR:RANG:AUTO?")[0]) == 1)
+        return (
+            self.inst.query_ascii_values("CURR:RANG:AUTO?",
+                                         converter=u'd')[0] == 1)
 
     @auto_current.setter
     def auto_current(self, value):
@@ -281,7 +295,9 @@ class K6430():
 
     @property
     def auto_resistance(self):
-        return (int(self.inst.query_ascii_values("RES:RANG:AUTO?")[0]) == 1)
+        return (
+            self.inst.query_ascii_values("RES:RANG:AUTO?",
+                                         converter=u'd')[0] == 1)
 
     @auto_resistance.setter
     def auto_resistance(self, value):
@@ -331,7 +347,8 @@ class K6430():
 
     @property
     def auto_average(self):
-        return (int(self.inst.query_ascii_values("AVER:AUTO?"))[0] == 1)
+        return (
+            self.inst.query_ascii_values("AVER:AUTO?", converter=u'd')[0] == 1)
 
     @auto_average.setter
     def auto_average(self, value):
@@ -346,7 +363,8 @@ class K6430():
 
     @property
     def average_repeat_count(self):
-        return int(self.inst.query_ascii_values("AVER:REP:COUN?")[0])
+        return self.inst.query_ascii_values("AVER:REP:COUN?",
+                                            converter=u'd')[0]
 
     @average_repeat_count.setter
     def average_repeat_count(self, value):
@@ -355,7 +373,8 @@ class K6430():
 
     @property
     def average_repeat(self):
-        return (int(self.inst.query_ascii_values("AVER:REP?"))[0] == 1)
+        return (self.inst.query_ascii_values("AVER:REP?",
+                                             converter=u'd')[0] == 1)
 
     @average_repeat.setter
     def average_repeat(self, value):
@@ -366,7 +385,7 @@ class K6430():
 
     @property
     def median_rank(self):
-        return int(self.inst.query_ascii_values("MED:RANK?")[0])
+        return self.inst.query_ascii_values("MED:RANK?", converter=u'd')[0]
 
     @median_rank.setter
     def median_rank(self, value):
@@ -375,7 +394,7 @@ class K6430():
 
     @property
     def median(self):
-        return (int(self.inst.query_ascii_values("MED?")[0]) == 1)
+        return (self.inst.query_ascii_values("MED?", converter=u'd')[0] == 1)
 
     @median.setter
     def median(self, value):
@@ -386,11 +405,11 @@ class K6430():
 
     @property
     def average_count_range(self):
-        return int(get_limits(self.inst, "AVER:COUN"))
+        return get_limits(self.inst, "AVER:COUN")
 
     @property
     def average_count(self):
-        return int(self.inst.query_ascii_values("AVER:COUN?")[0])
+        return self.inst.query_ascii_values("AVER:COUN?", converter=u'd')[0]
 
     @average_count.setter
     def average_count(self, value):
@@ -399,7 +418,7 @@ class K6430():
 
     @property
     def average(self):
-        return (int(self.inst.query_ascii_values("AVER?")[0]) == 1)
+        return (self.inst.query_ascii_values("AVER?", converter=u'd')[0] == 1)
 
     @average.setter
     def average(self, value):
@@ -435,7 +454,8 @@ class K6430():
     @property
     def auto_voltage_range(self):
         return (
-            int(self.inst.query_ascii_values("SOUR:VOLT:RANG:AUTO?"))[0] == 1)
+            self.inst.query_ascii_values("SOUR:VOLT:RANG:AUTO?",
+                                         converter=u'd')[0] == 1)
 
     @auto_voltage_range.setter
     def auto_voltage_range(self, value):
@@ -460,7 +480,8 @@ class K6430():
     @property
     def auto_current_range(self):
         return (
-            int(self.inst.query_ascii_values("SOUR:CURR:RANG:AUTO?"))[0] == 1)
+            self.inst.query_ascii_values("SOUR:CURR:RANG:AUTO?",
+                                         converter=u'd')[0] == 1)
 
     @auto_current_range.setter
     def auto_current_range(self, value):
@@ -498,15 +519,20 @@ class K6430():
     def beep(self, time=0.5, freq=500):
         if within_limits(freq, [65, 2e6]):
             if within_limits(time, [0, 512/freq]):
-                self.inst.write("SYST:BEEP %f, %f", (freq, time))
+                self.inst.write("SYST:BEEP %f, %f" % (freq, time))
 
     def measurement(self, tmax=300):
         self.inst.write("INIT")
+        self.inst.write("*OPC?")
         tm = time.time() + tmax
-        opc = 0
-        while (opc < 1 or time.time() < tm):
-            opc = int(np.query_ascii_values("*OPC?")[0])
-        if (opc == 1):
-            return self.query_ascii_values("FETCH?")
+        cycles = 0
+        opc = False
+        while (not opc and time.time() < tm):
+            cycles = cycles+1
+            if (self.inst.stb > 0):
+                opc = self.inst.read() == "1\n"
+                break
+        if (opc):
+            return self.inst.query_ascii_values("FETCH?")
         else:
             return None
