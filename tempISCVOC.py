@@ -28,14 +28,15 @@ def changeTemp(T, cry, acc=0.5, stab=0.5, stabt=30.0, tmax=720):
         Terr = abs(T-cT[0])
 
 
-def ivmeas(smu, voltages, plt):
+def ivmeas(smu, voltages, plt, init_sleep=10.0):
     meas = np.zeros((voltages.size, 2))
     # Set initial voltage and turn on output
-    smu.set_voltage(voltages[0])
+    smu.voltage = voltages[0]
     smu.output = True
+    time.sleep(init_sleep)
     # Sweep voltages
     for k, v in enumerate(voltages):
-        smu.set_voltage(v)
+        smu.voltage = v
         val = smu.measurement()  # Measure and read
         plt.update(val[0], abs(val[1]))
         meas[k, :] = np.array([val[0], val[1]])
@@ -78,19 +79,27 @@ def themeasure(path, smu, las, cry, pm, pltvoc, pltiv,
     return res
 
 
-def voc(smu, drift_acc=0.001, drift_t=0.5, tmax=120.0):
-    smu.set_current(0.0)
-    smu.output = True
+def voc(smu, drift_acc=0.0001, drift_t=1.0, tmax=120.0):
+    term = not smu.output
+    if (term):
+        smu.current = 0.0
+        smu.output = True
     t0 = time.time()
     tm = t0 + tmax
     voc0 = smu.measurement()[0]
     time.sleep(drift_t)
     voc = smu.measurement()[0]
-    while (time.time() < tm and np.abs(1.0-voc/voc0) > drift_acc):
+    count = 0
+    while (count < 3 or (time.time() < tm and np.abs(1.0-voc/voc0) > drift_acc)):
         voc0 = voc
         time.sleep(drift_t)
         voc = smu.measurement()[0]
-    smu.output = False
+        count = count + 1
+    if term:
+        smu.output = False
+    else:
+        smu.beep()
+    print("%d | %f" % (count, time.time()-t0))
     return voc
 
 
@@ -98,7 +107,9 @@ def laserVoc(smu, las, pm, lascur, plt=None, lascor=1.0):
     lp = np.zeros(lascur.shape)
     vo = np.zeros(lascur.shape)
     las.set_current(lascur[0])
+    smu.output = True
     las.output = True
+    cnt = 
     for k, lc in enumerate(lascur):
         las.set_current(lc)
         vo[k] = voc(smu)
@@ -106,4 +117,5 @@ def laserVoc(smu, las, pm, lascur, plt=None, lascor=1.0):
         if plt is not None:
             plt.update(abs(lp[k]), vo[k])
     las.output = False
+    smu.output = False
     return (lp, vo)
