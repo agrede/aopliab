@@ -77,5 +77,10 @@
         "manufacturer": "ThorLabs",
         "model": "PM100D",
         "addr": "USB0::0x1313::0x8078::P0004031::INSTR"
+    },
+    "SfA": {
+        "manufacturer": "Keithely",
+        "model": "K6430",
+        "addr": "GPIB0::18::INSTR"
     }
 }
