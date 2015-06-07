@@ -8,7 +8,7 @@ Created on Wed May 27 06:30:15 2015
 import numpy as np
 import aopliab_common as ac
 import visa
-from keithley import K2400
+from keithley import K2400, K6430
 from thorlabs import PM100D, CLD1015
 from time import sleep
 # import matplotlib.pyplot as plt
@@ -20,16 +20,18 @@ rm = visa.ResourceManager()
 pth = "cTest.json"
 iv_volts = np.linspace(-1.5, 2.5, 501)
 # temperatures = np.arange(300, 175, -25)
-laser_currents = np.linspace(140e-3, 620e-3, 75)
+laser_currents = np.linspace(140e-3, 620e-3, 51)
 laserCorr = 7.3663102104835128
 
-smui = ac.getInstr(rm, "SMU")
+#smui = ac.getInstr(rm, "SMU")
+sfai = ac.getInstr(rm, "SfA")
 lasi = ac.getInstr(rm, "LasPow")
 pmi = ac.getInstr(rm, "PowMeter")
 # liri = ac.getInstr(rm, "IRLaser")
 # cryi = ac.getInstr(rm, "CryoTemp")
 
-smu = K2400(smui)
+#smu = K2400(smui)
+sfa = K6430(sfai)
 las = K2400(lasi)
 pm = PM100D(pmi)
 # lir = CLD1015(liri)
@@ -44,7 +46,7 @@ las.voltage_limit = 3.0
 
 #pltiv = ac.DynamicPlot(ptype="semilogy")
 pltvoc = ac.DynamicPlot(ptype="semilogx")
-pltiv = ac.DynamicPlot(ptype="semilogy")
+#pltiv = ac.DynamicPlot(ptype="semilogy")
 
 # IV Measure
 smu.set_voltage(0.0)
@@ -54,10 +56,12 @@ np.savetxt("Alyssa/IV_292.8.csv", iv, delimiter=",")
 pltiv.addnew()
 
 # VOC measure
-smu.set_current(0.0)
-smu.voltage_limit = 3.0
-(lp, vo) = ti.laserVoc(smu, las, pm, laser_currents, plt=pltvoc, lascor=laserCorr)
-np.savetxt("Alyssa/293K.csv", np.vstack((lp, vo)).T, delimiter=",")
+sfa.auto_current = False
+sfa.current_range = 0.0
+sfa.current = 0.0
+sfa.voltage_limit = 3.0
+(lp, vo) = ti.laserVoc(sfa, las, pm, laser_currents, plt=pltvoc, lascor=laserCorr)
+np.savetxt("../Alyssa/293K_run3.csv", np.vstack((lp, vo)).T, delimiter=",")
 pltvoc.addnew()
 #res = ti.themeasure(pth, smu, las, cry, pm, pltvoc, pltiv,
 #                    iv_volts, laser_currents, temperatures, laserCorr)
@@ -91,6 +95,10 @@ for k, c in enumerate(laser_currents):
     las.set_current(c)
     sleep(1)
     powb[k] = pm.power
-np.savetxt("Alyssa/PowerTest532.csv", np.vstack((laser_currents, pows, powb)).T, delimiter=",")
+np.savetxt("../Alyssa/PowerTest532.csv", np.vstack((laser_currents, pows, powb)).T, delimiter=",")
 
 laserCorr = (pows/powb).mean()
+
+
+
+# Testing
