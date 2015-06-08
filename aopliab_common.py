@@ -125,6 +125,17 @@ def get_limits(inst, query):
         inst.query_ascii_values(query+"? MAX")[0]]
 
 
+def get_bool(inst, query):
+    return (inst.query_ascii_values(query+"?", converter=u'd')[0] == 1)
+
+
+def set_bool(inst, query, value):
+    if (value):
+        inst.write(query+" 1")
+    else:
+        inst.write(query+" 0")
+
+
 class NumpyAwareJSONEncoder(json.JSONEncoder):
     def default(self, obj):
         if isinstance(obj, np.ndarray):
