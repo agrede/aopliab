@@ -1,6 +1,7 @@
 import re
-from aopliab_common import within_limits, json_load
+from aopliab_common import within_limits, json_load, get_bool, set_bool
 import numpy as np
+import weakref
 
 
 class InfiniiVision5000():
@@ -103,3 +104,86 @@ class InfiniiVision5000():
     @property
     def preamble(self):
         return self.inst.query_ascii_values("WAV:PRE?")
+
+
+class InfiniiVision5000Channel:
+    """
+    Channel related commands
+    """
+
+    number = None
+
+    def __init__(self, parent, number):
+        self.parent = weakref.proxy(parent)
+        self.number = number
+
+    @property
+    def bwlimit(self):
+        return get_bool(self.parent.inst, "CHAN%d:BWL" % self.number)
+
+    @bwlimit.setter
+    def bwlimit(self, value):
+        set_bool(self.parent.inst, "CHAN%d:BWL" % self.number, value)
+
+    @property
+    def dccoupling(self):
+        return (self.parent.inst.query(
+            "CHAN%d:COUP?" % self.number)[:2] == "DC")
+
+    @dccoupling.setter
+    def dccoupling(self, value):
+        if (value):
+            self.parent.inst.write("CHAN%d:COUP DC" % self.number)
+        else:
+            self.parent.inst.write("CHAN%d:COUP AC" % self.number)
+
+    @property
+    def display(self):
+        return get_bool(self.parent.inst, "CHAN%d:DISP" % self.number)
+
+    @display.setter
+    def display(self, value):
+        set_bool(self.parent.inst, "CHAN%d:DISP" % self.number, value)
+
+    @property
+    def lowimped(self):
+        return (
+            self.parent.inst.query(
+                "CHAN%d:IMP?" % self.number)[:4] == "FIFT")
+
+    @lowimped.setter
+    def lowimp(self, value):
+        if (value):
+            self.parent.inst.write("CHAN%d:IMP FIFT" % self.number)
+        else:
+            self.parent.inst.write("CHAN%d:IMP ONEM" % self.number)
+
+    @property
+    def invert(self):
+        return get_bool(self.parent.inst, "CHAN%d:INV" % self.number)
+
+    @invert.setter
+    def invert(self, value):
+        set_bool(self.parent.inst, "CHAN%d:INV" % self.number, value)
+
+    @property
+    def label(self):
+        return self.parent.inst.query("CHAN%d:LAB?" % self.number)[:-1]
+
+    @label.setter
+    def label(self, value):
+        try:
+            s = str(value)
+        except TypeError:
+            s = "CHAN 1"
+        if (len(s) > 10):
+            s = s[:10]
+        self.parent.write("CHAN%d:LAB \"%s\"" % (self.number, s))
+
+    @property
+    def offset(self):
+        return self.parent.query_ascii_values("CHAN%d:OFFS?" % self.number)[0]
+
+    @offset.setter
+    def offset(self, value):
+        pass
