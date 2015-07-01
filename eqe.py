@@ -127,6 +127,17 @@ def get_filters():
     lc = json_load("local.json")
     return lc['FilterWheel']['filters']
 
+
+def read_file(path):
+    dta = json_load(path)
+    kys = np.array(['mlam', 'volt', 'cur', 'phas', 'phi', 'res', 'eqe'])
+    for k in kys:
+        if k in dta.keys():
+            dta[k] = [np.array(x) for x in dta[k]]
+    dta['settings']['wavelength'] = [np.array(x)
+                                     for x in dta['settings']['wavelength']]
+    return dta
+
 #hc = PC.h*PC.c/PC.e*1e9
 #wd = "C:\\Users\\Maxwell\\Desktop\\Grede\\2015-03-10\\"
 #
