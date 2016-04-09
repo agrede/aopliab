@@ -57,7 +57,7 @@ def measureResponse(lam, mon, lia, dwell, plot=None, N=1, tia=None,
             y = rtn['eqe'][k]
         elif (res is not None):
             rtn['pow'][k] = np.nanmean(rtn['cur'][k, :])/d
-            rtn['phi'][k] = rtn['res'][k]*rtn['mlam'][k]/hc
+            rtn['phi'][k] = rtn['pow'][k]*rtn['mlam'][k]/hc
             y = rtn['phi'][k]
         else:
             y = np.nanmean(rtn['cur'][k, :])
@@ -90,12 +90,19 @@ def brk_wavelength(start, stop, step, filters, overlap=3):
     return rtn
 
 
+def set_response(paths):
+    pass
+
+
 def get_pds(cal_file="calibrations.json"):
     cal = json_load(cal_file)
     pds = cal['PhotoDiodes']
     for mod, pdm in pds.items():
         for sn, r in pdm['responsivity'].items():
-            pds[mod]['responsivity'][sn] = np.array(r)
+            tmp = np.array(r)
+            pds[mod]['responsivity'][sn] = interp1d(1e9*tmp[:, 0], tmp[:, 1],
+                                                    kind='cubic',
+                                                    bounds_error=False)
     return pds
 
 

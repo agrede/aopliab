@@ -13,6 +13,17 @@ class EqeUi(QtGui.QMainWindow):
         validator = QtGui.QDoubleValidator()
         self.rm = visa.ResourceManager()
 
+        # Measurement Type
+        self.eqemeas = True
+        self.type_radio_cal.toggled.connect(self.changeType)
+        pds = eqe.get_pds()
+        self.pdidx = 0
+        self.diodes = []
+        for m, ds in pds.items():
+            for sn, r in ds['responsivity'].items():
+                self.diodes.append({'model': m, 'sn': sn, 'range': ds['range'],
+                                    'response': r})
+
         # TransImp Amplifier
         self.tia = None
         self.tia_enable.stateChanged.connect(self.enableTia)
@@ -69,6 +80,12 @@ class EqeUi(QtGui.QMainWindow):
         lstart = float(self.wavelength_start.text())
         lstep = float(self.wavelength_step.text())
         lstop = float(self.wavelength_end.text())
+        if not self.eqemeas:
+            if lstart < self.diodes[self.pdidx]['range'][0]*1e9:
+                lstart = self.diodes[self.pdidx]['range'][0]*1e9
+            if lstop > self.diodes[self.pdidx]['range'][1]*1e9:
+                lstop = self.diodes[self.pdidx]['range'][1]*1e9
+        
         lam = eqe.brk_wavelength(lstart, lstop, lstep, self.filters_curr,
                                  overlap=self.overlap)
 
@@ -112,8 +129,13 @@ class EqeUi(QtGui.QMainWindow):
             meas['settings']['lia_sens'][k] = self.lia.sensitivity
             meas['settings']['lia_tc'][k] = self.lia.filter_time_constant
             meas['settings']['dwell'][k] = dwell
-            res = eqe.measureResponse(l, self.mon, self.lia, dwell, N=1,
+            if self.eqemeas:
+                res = eqe.measureResponse(l, self.mon, self.lia, dwell, N=1,
                                       tia=self.tia, plot=self.updatePlot)
+            else:
+                res = eqe.measureResponse(l, self.mon, self.lia, dwell, N=1,
+                                          tia=self.tia, plot=self.updatePlot,
+                                          res=self.diodes[self.pdidx]['response'])
             meas = eqe.merge_meas(meas, res, k)
 
         fileName = QtGui.QFileDialog.getSaveFileName(
@@ -161,6 +183,20 @@ class EqeUi(QtGui.QMainWindow):
             self.filters_aval = [int(x) for x in afilt]
             self.filters_curr = [int(x) for x in cfilt]
             self.overlap = ovr
+
+    def setPhotodiode(self):
+        diodes = ["%s %s %d--%d" % (x['model'], x['sn'], 1e9*x['range'][0],
+                                    1e9*x['range'][1]) for x in self.diodes]
+        indx, ok = PhotoDiodes.getPhotodiode(diodes)
+        if (ok):
+            self.pdidx = indx
+
+    def changeType(self, enabled):
+        if (enabled and self.eqemeas):
+            self.eqemeas = False
+            self.setPhotodiode()
+        else:
+            self.eqemeas = True
 
     def enableTia(self):
         if (self.tia_enable.isChecked()):
@@ -286,6 +322,27 @@ class FilterViewer(QtGui.QDialog):
         (afilt, cfilt) = dialog.filters()
         ovr = dialog.ovrlap()
         return (ovr, afilt, cfilt, result == QtGui.QDialog.Accepted)
+
+
+class PhotoDiodes(QtGui.QDialog):
+    def __init__(self, diodes, parent=None):
+        super(PhotoDiodes, self).__init__()
+        uic.loadUi('photo_diode_view.ui', self)
+        self.set_diodes(diodes)
+
+    def set_diodes(self, diodes):
+        self.photo_diodes.clear()
+        self.photo_diodes.addItems(diodes)
+
+    def selectedIndex(self):
+        return self.photo_diodes.currentRow()
+
+    @staticmethod
+    def getPhotodiode(diodes, parent=None):
+        dialog = PhotoDiodes(diodes, parent=parent)
+        result = dialog.exec_()
+        indx = dialog.selectedIndex()
+        return (indx, result == QtGui.QDialog.Accepted)
 
 
 if __name__ == '__main__':

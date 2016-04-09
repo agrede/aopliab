@@ -36,6 +36,15 @@
         "model": "K2400",
         "addr": "GPIB0::24::INSTR"
     },
+    "SPA": {
+        "manufacturer": "HP",
+        "model": "HP4145B",
+        "addr": "GPIB0::14::INSTR",
+        "conn_params": {
+            "read_termination": ["<CR>","<LF>"],
+            "write_termination": ["<CR>","<LF>"]
+        }
+    },
     "LasPow": {
         "manufacturer": "Keithely",
         "model": "K2400",

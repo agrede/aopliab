@@ -156,6 +156,10 @@ class PM100D():
     def power(self):
         return self.inst.query_ascii_values("READ?")[0]
 
+    @property
+    def response(self):
+        return self.inst.query_ascii_values("SENS:CORR:POW:RESP?")[0]
+
 
 class CLD1015():
     """
