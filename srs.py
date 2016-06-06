@@ -26,6 +26,7 @@ class SR570(PreAmp):
     _filter_index = 5
     currs = np.array([])
     config = None
+    preamps = np.array([None])
 
     def __init__(self, inst):
         self.inst = inst
@@ -225,10 +226,6 @@ class SR830():
     """
 
     inst = None
-    gains = np.array([])
-    senss = np.array([])
-    tcons = np.array([])
-    slopes = np.array([])
     config = None
 
     def __init__(self, inst):
@@ -237,8 +234,17 @@ class SR830():
         cfg = json.load(cfg_file)
         cfg_file.close()
         self.config = cfg['SR830']
-        self.gains = np.array(self.config['acgains'])
-        self.tcons = np.array(self.config['time_constants'])
+        tmp = np.array(self.config['time_constants'])
+        self.tcons = ma.masked_where(tmp < 0., tmp)
+        tmp = np.array(self.config['sensitivities'])
+        self.senssall = ma.masked_where(tmp < 0., tmp)
+        tmp = np.array(self.config['slopes'])
+        self.slopes = ma.masked_where(tmp < 0., tmp)
+        bwm = np.atleast_2d(self.config['slope_enbw'])
+        sw = np.atleast_2d(self.config['slope_wait'])
+        tc = np.atleast_2d(self.tcons).T
+        self.enbws = bwm/tc
+        self.waittimes = sw*tc
 
     @property
     def imode(self):
@@ -270,6 +276,10 @@ class SR830():
             self.inst.write("ICPL 1")
         else:
             self.inst.write("ICPL 0")
+
+    @property
+    def senss(self):
+        return self.senssall[:, self.imode]
 
     @property
     def sensitivity(self):
@@ -354,12 +364,15 @@ class SR830():
             self.inst.write("FREQ %0.5e" % value)
 
     @property
-    def filter_time_constant(self):
-        idx = self.inst.query_ascii_values("OFLT?")[0]
-        return self.tcons[idx]
+    def time_constant_index(self):
+        return int(self.query_ascii_values("OFLT?")[0])
 
-    @filter_time_constant.setter
-    def filter_time_constant(self, value):
+    @property
+    def time_constant(self):
+        return self.tcons[self.time_constant_index]
+
+    @time_constant.setter
+    def time_constant(self, value):
         idx = nearest_index(value, self.tcons, True)
         self.inst.write("OFLT %d" % idx)
 
@@ -375,13 +388,47 @@ class SR830():
             self.isnt.write("SYNC 0")
 
     @property
-    def filter_slope(self):
-        return self.slopes[int(self.inst.query_ascii_values("OFSL?")[0])]
+    def slope_index(self):
+        return int(self.inst.query_ascii_values("OFSL?")[0])
 
-    @filter_slope.setter
-    def filter_slope(self, value):
+    @property
+    def slope(self):
+        return self.slopes[self.slope_index]
+
+    @slope.setter
+    def slope(self, value):
         idx = nearest_index(value, self.slopes, False)
         self.inst.write("SLOPE %d" % idx)
+
+    def system_auto_phase(self, idx):
+        self.inst.write("APHS")
+
+    @property
+    def wait_time(self):
+        return self.waittimes[self.time_constant_index, self.slope_index]
+
+    @property
+    def enbw(self):
+        return self.enbws[self.time_constant_index, self.slope_index]
+
+    @property
+    def cmags(self):
+        rtn = self.inst.query_ascii_values("OUTP? 3")
+        if self.preamps[0] is not None:
+            rtn = rtn[0]*self.preamps[0].sensitivity
+        return rtn
+
+    def adc(self, index):
+        if within_limits(index, [0, 3]):
+            return self.inst.query_ascii_values("OAUX? %d" (index+1))[0]
+        return np.nan
+
+    @property
+    def cmeas(self):
+        rtn = self.inst.query_ascii_values("SNAP? 1,2,5,6,7,8")
+        if self.preamps[0] is not None:
+            rtn[:2] = rtn[:2]*self.preamps[0].sensitivity
+        return rtn
 
     @property
     def x(self):

@@ -111,12 +111,13 @@ class SR7230(LockInAmplifier):
 
     @property
     def senss(self):
+        idx = self.imode
         if self.ref_mode == 0:
-            return self.senssall[:, [0]]
+            return self.senssall[:, [idx]]
         elif self.ref_mode == 1:
-            return self.senssall[:, [0, 0]]
+            return self.senssall[:, [idx, idx]]
         else:
-            return self.senssall
+            return self.senssall[:, [idx, 0]]
 
     @property
     def sensitivity_index(self):
