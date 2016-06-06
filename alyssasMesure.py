@@ -31,7 +31,7 @@ lasi = ac.getInstr(rm, "LasPow")
 pmi = ac.getInstr(rm, "PowMeter")
 liai = ac.getInstr(rm, "LockInAmp")
 # liri = ac.getInstr(rm, "IRLaser")
-# cryi = ac.getInstr(rm, "CryoTemp")
+cryi = ac.getInstr(rm, "CryoTemp")
 
 #smu = K2400(smui)
 sfa = K6430(sfai)

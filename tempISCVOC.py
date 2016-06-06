@@ -109,7 +109,6 @@ def laserVoc(smu, las, pm, lascur, plt=None, lascor=1.0):
     las.set_current(lascur[0])
     smu.output = True
     las.output = True
-    cnt = 
     for k, lc in enumerate(lascur):
         las.set_current(lc)
         vo[k] = voc(smu)
