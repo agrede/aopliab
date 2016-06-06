@@ -17,6 +17,11 @@
             "write_termination": ["<CR>", "<LF>"]
         }
     },
+    "FuncGen": {
+        "manufacturer": "SRS",
+        "model": "DS345",
+        "addr": "GPIB0::19::INSTR"
+    },
     "LockInAmp": {
         "manufacturer": "Ametek",
         "model": "SR7230",
