@@ -74,8 +74,8 @@
     },
     "FilterWheel": {
         "manufacturer": "ThorLabs",
-        "model": "Manual6",
-        "filters": [0, 400, 550, 830]
+        "model": "FW102C",
+        "filters": [400, 550, 830, 1000, null, null]
     },
     "OScope": {
         "manufacturer": "Keysight",
