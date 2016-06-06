@@ -35,3 +35,28 @@ class SpecPro():
         self.wavelength_limits[1] = tmp.value
         self._dll.ARC_get_Mono_Wavelength_Min_nm(self._mono, byref(tmp))
         self.wavelength_limits[0] = tmp.value
+
+    @property
+    def grating(self):
+        tmp = c_int(32)
+        self._dll.ARC_get_Mono_Grating(self._mono, byref(tmp))
+        return tmp.value
+        
+    @grating.setter
+    def grating(self, value):
+        value = int(value)
+        if self.grating_installed(value):
+            self._dll.ARC_set_Mono_Grating(self._mono, c_int(value))
+        
+    @property
+    def grating_range(self):
+        tmp = c_int(32)
+        self._dll.ARC_get_Mono_Grating_Max(self._mono, byref(tmp))
+        return np.array([1, tmp.value])
+        
+    def grating_installed(self, value):
+        value = int(value)
+        if within_limits(value, self.grating_range):
+            if self._dll.ARC_get_Mono_Grating_Installed(self._mono, c_int(value)) == -1:
+                return True
+        return False
