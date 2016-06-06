@@ -237,3 +237,31 @@ class CLD1015():
     @property
     def temperature(self):
         return self.inst.query_ascii_values("MEAS:TEMP?")[0]
+
+
+class FW102C():
+    """
+    PyVisa wrapper for motorized filter wheel
+    """
+
+    filters = np.array([])
+    clear_pos = 5
+
+    def __init__(self, inst):
+        self.inst = inst
+
+    @property
+    def position_limits(self):
+        return np.array([0, int(self.inst.query_ascii_values("pcount?")[0])-1])
+
+    @property
+    def position(self):
+        return int(self.inst.query_ascii_values("pos?")[0])-1
+
+    @position.setter
+    def position(self, value):
+        if within_limits(value, self.position_limits):
+            self.inst.write("pos=%d" % (value+1))
+
+    def clear_filter(self):
+        self.position = self.clear_pos
