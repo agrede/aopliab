@@ -41,7 +41,7 @@ class MC2000():
                 self.write('blade=%d' % value)
         elif (value in self.blades[:, 0]):
             v = np.where(value == self.blades[:, 0])[0][0]
-            self.write('blade%d' % v)
+            self.write('blade=%d' % v)
 
     @property
     def freq_limits(self):
