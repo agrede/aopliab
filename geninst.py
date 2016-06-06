@@ -1,8 +1,7 @@
 import numpy as np
 import numpy.ma as ma
-import timeit.default_timer as timer
 from aopliab_common import within_limits, nearest_index
-from sleep import sleep
+from time import sleep
 
 
 class PreAmp():
@@ -130,7 +129,7 @@ class LockInAmplifier():
             if n < 0:
                 rtn[k] = np.nan
             else:
-                rtn[k] = self.senss[k, n]
+                rtn[k] = self.senss[n, k]
         return rtn
 
     @property
@@ -138,12 +137,10 @@ class LockInAmplifier():
         nidx = self.sensitivity_index + 1
         rtn = np.ones(nidx.size)
         for k, n in enumerate(nidx):
-            if n >= self.senss.shape[k, 0]:
-                rtn[k] = np.nan
-            elif n >= self.senss.shape[0]:
+            if n >= self.senss.shape[0]:
                 rtn[k] = np.nan
             else:
-                rtn[k] = self.senss[k, n]
+                rtn[k] = self.senss[n, k]
         return rtn
 
     def noise_measure(self, tc_noise, tc_mag, slope_noise,
@@ -218,9 +215,13 @@ class LockInAmplifier():
                (self.auto_dewll and not dwelled)):
             if self.auto_scale:
                 scaled = not self.update_scale(self.last_mags)
-            if self.auto_dewll:
+            if self.auto_dwell:
                 dwelled = not self.update_timeconstant(self.last_mags)
-            self.last_mags = self.cmags
+                sleep(self.wait_time)
+            tmp = self.cmags
+            if self.auto_scale and np.any(np.abs(1.-tmp/self.last_mags) > 0.5):
+                scaled = False
+            self.last_mags = tmp
         return self.cmeas
 
     def update_scale(self, mags):
@@ -264,12 +265,12 @@ class LockInAmplifier():
                         self.preamps[k].phase_shift = self.phaseoff[k]
                     else:
                         self.phaseoff = (k, self.preamps[k].phase_shift)
-                remeas = (change and (remeas or m > js or m < 0.01))
+                remeas = (change and (remeas or m > js[k] or m < 0.1*js[k]))
             if (not change and m <= 0.3*js[k] and
                     not np.isnan(self.inc_sensitivity[k])):
                 self.sensitivity = (k, self.inc_sensitivity[k])
-                remeas = (remeas or m < 0.01)
-            elif (not change and m >= 0.9*self.sensitivity[k] and
+                remeas = (remeas or m < 0.1*js[k])
+            elif (not change and m >= 0.9*js[k] and
                   not np.isnan(self.dec_sensitivity[k])):
                 self.sensitivity = (k, self.dec_sensitivity[k])
                 remeas = (remeas or m > self.sensitivity[k])
@@ -287,8 +288,14 @@ class LockInAmplifier():
             k0, k1 = np.where(
                 self.waittimes == self.waittimes[
                     (self.enbws <= df)].min())
-            if k0.size > 0 and k1.size > 0:
-                k0, k1 = np.argmin(self.enbws)
+            if k0.size > 1 and k1.size > 1:
+                k2 = np.argmin(np.array([
+                                self.enbws[n0, n1] for n0, n1 in zip(k0, k1)]))
+                k0 = k0[k2]
+                k1 = k1[k2]
+            else:
+                k0 = k0[0]
+                k1 = k1[0]
             tcs[k] = self.tcons[k0]
             slopes[k] = self.slopes[k1]
             wts[k] = self.waittimes[k0, k1]
@@ -298,19 +305,19 @@ class LockInAmplifier():
         wait = wts[k]
         if wait > self.tol_maxsettle:
             tc, slope, wait = self.best_tc_for_wait(self.tol_maxsettle)
-        remeas = (remeas and self.wait_time < wait)
+        remeas = (remeas or self.wait_time < wait)
         self.time_constant = tc
         self.slope = slope
         return remeas
 
     def best_tc_for_wait(self, wait):
-        k0, k1 = np.argmin(self.enbws[self.waittimes <= wait])
-        return (self.tcons[k0], self.slopes[k1], self.waittimes[k0, k1])
+        k0, k1 = np.where(self.enbws == self.enbws[self.waittimes <= wait].min())
+        return (self.tcons[k0[0]], self.slopes[k1[0]], self.waittimes[k0[0], k1[0]])
 
     def tolerance(self, mags):
         return np.vstack((
-            mags*self.tol_abs,
-            self.tol_rel)).max(axis=0)
+            mags*self.tol_rel,
+            self.tol_abs)).max(axis=0)
 
     def approx_noise(self, mags):
         return (np.vstack((

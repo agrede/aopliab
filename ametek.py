@@ -2,7 +2,7 @@ import json
 import numpy as np
 import collections
 from aopliab_common import within_limits, nearest_index
-from sleep import sleep
+from time import sleep
 from geninst import LockInAmplifier
 import numpy.ma as ma
 
@@ -123,12 +123,12 @@ class SR7230(LockInAmplifier):
     def sensitivity_index(self):
         if self.ref_mode > 0:
             sns = np.array([0, 0])
-            sns[0] = int(self.query("SEN1"))-3
-            sns[1] = int(self.query("SEN2"))-3
+            sns[0] = int(self.query("SEN1")[0])-3
+            sns[1] = int(self.query("SEN2")[0])-3
             return sns
         else:
-            return (int(self.query("SEN"))-3)
-
+            return (np.array([int(x) for x in self.query("SEN")])-3)
+            
     @property
     def sensitivity(self):
         if self.ref_mode > 0:
@@ -136,7 +136,7 @@ class SR7230(LockInAmplifier):
             sns[0] = self.query("SEN1.")[0]
             sns[1] = self.query("SEN2.")[0]
         else:
-            return self.query("SEN.")
+            return np.array(self.query("SEN."))
 
     @sensitivity.setter
     def sensitivity(self, value):
@@ -217,7 +217,7 @@ class SR7230(LockInAmplifier):
 
     @property
     def ref_source(self):
-        return int(self.query("IE"))
+        return int(self.query("IE")[0])
 
     @ref_source.setter
     def ref_source(self, value):
@@ -265,9 +265,9 @@ class SR7230(LockInAmplifier):
             phs[1] = self.query("REFP2.")[0]
             return phs
         else:
-            return self.query("REFP.")
+            return np.array(self.query("REFP."))
 
-    @phaseoff
+    @phaseoff.setter
     def phaseoff(self, value):
         if type(value) is np.ndarray:
             for k, v in value:
@@ -332,9 +332,9 @@ class SR7230(LockInAmplifier):
     @property
     def time_constant_index(self):
         if self.ref_mode > 0:
-            return (int(self.query("TC1")[0])-3)
+            return (int(self.query("TC1")[0]))
         else:
-            return (int(self.query("TC")[0])-3)
+            return (int(self.query("TC")[0]))
 
     @property
     def time_constant(self):
@@ -346,12 +346,12 @@ class SR7230(LockInAmplifier):
     @time_constant.setter
     def time_constant(self, value):
         if (self.noise_mode):
-            idx = 5+nearest_index(value, [5e-4, 1e-3, 2e-3, 5e-3, 1e-2], True)
+            idx = 5+nearest_index(value, np.array([5e-4, 1e-3, 2e-3, 5e-3, 1e-2]), True)
         else:
             idx = nearest_index(value, self.tcons, True)
         if self.ref_mode > 0:
-            self.write("TC1 %d", idx)
-            self.write("TC2 %d", idx)
+            self.write("TC1 %d" % idx)
+            self.write("TC2 %d" % idx)
         else:
             self.write("TC %d" % idx)
 
@@ -440,13 +440,14 @@ class SR7230(LockInAmplifier):
             mags[0] = self.query("MAG1.")[0]
             mags[1] = self.query("MAG2.")[0]
         else:
-            mags = self.query("MAG.")
+            mags = np.array(self.query("MAG."))
         for k, m in enumerate(mags):
             if self.preamps[k] is not None:
                 mags[k] = mags[k]*np.preamps[k].sensitivity
+        return mags
 
     def adc(self, index):
-        return self.query("ADC. %d" % (index+1))
+        return self.query("ADC. %d" % (index+1))[0]
 
     def noise_measure(self, tc_noise, tc_mag, slope_noise,
                       slope_mag):
@@ -462,12 +463,12 @@ class SR7230(LockInAmplifier):
             for k in range(y2n.size):
                 sleep(self.wait_time)
                 y2n[k] = self.query("Y2.")[0]
-            rtn[0, 1] = self.query("NHZ.")
+            rtn[0, 1] = self.query("NHZ.")[0]
             rtn[1, 1] = y2n.std()/np.sqrt(self.enbw)
         else:
             rtn = np.zeros((1, 2))
             sleep(10.)
-            rtn[0, 1] = self.query("NHZ.")
+            rtn[0, 1] = self.query("NHZ.")[0]
         self.noise_mode = False
         self.filter_fast_mode = False
         self.slope = slope_mag

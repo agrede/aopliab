@@ -75,6 +75,14 @@
     "FilterWheel": {
         "manufacturer": "ThorLabs",
         "model": "FW102C",
+        "addr": "ASRL13::INSTR",
+        "conn_params": {
+            "baud_rate": 115200,
+            "data_bits": 8,
+            "stop_bits": 1,
+            "write_termination": ["<CR>"],
+            "read_termination": ["<CR>", "> "]
+        },
         "filters": [400, 550, 830, 1000, null, null]
     },
     "OScope": {
