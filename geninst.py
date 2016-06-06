@@ -84,7 +84,6 @@ class PreAmp():
 
 
 class LockInAmplifier():
-    senss = np.array([])
     tcons = np.array([])
     slopes = np.array([])
     noise_base = np.array([])
@@ -97,8 +96,7 @@ class LockInAmplifier():
     auto_dewll = False
     auto_phase = False
     auto_phase_tc = 5.
-    monitors = np.array([])
-    measures = np.array([])
+    last_mags = np.array([])
     last_meas = np.array([])
     min_sleep = 0.001
     enbws = ma.array([])
@@ -106,6 +104,10 @@ class LockInAmplifier():
     lock_time_constant = True
 
     def __init__(self, inst):
+        pass
+
+    @property
+    def senss(self):
         pass
 
     @property
@@ -128,7 +130,7 @@ class LockInAmplifier():
             if n < 0:
                 rtn[k] = np.nan
             else:
-                rtn[k] = self.senss[n]
+                rtn[k] = self.senss[k, n]
         return rtn
 
     @property
@@ -136,12 +138,12 @@ class LockInAmplifier():
         nidx = self.sensitivity_index + 1
         rtn = np.ones(nidx.size)
         for k, n in enumerate(nidx):
-            if n >= self.senss.shape[0]:
+            if n >= self.senss.shape[k, 0]:
                 rtn[k] = np.nan
-            elif n >= self.senss.size:
+            elif n >= self.senss.shape[0]:
                 rtn[k] = np.nan
             else:
-                rtn[k] = self.senss[n]
+                rtn[k] = self.senss[k, n]
         return rtn
 
     def noise_measure(self, tc_noise, tc_mag, slope_noise,
@@ -157,7 +159,7 @@ class LockInAmplifier():
         pass
 
     @property
-    def dwell(self):
+    def wait_time(self):
         pass
 
     @property
@@ -254,14 +256,14 @@ class LockInAmplifier():
                     change = True
                 if self.auto_phase and change:
                     if np.isnan(self.preamps[k].phase_shift):
-                        ctc = self.time_constant
+                        ctc = self.time_constant[k]
                         self.time_constant = self.auto_phase_tc
-                        sleep(self.dwell)
-                        self.system_auto_phase()
-                        self.time_constant = ctc
-                        self.preamps[k].phase_shift = self.phaseoff
+                        sleep(self.wait_time)
+                        self.system_auto_phase(k)
+                        self.time_constant = (k, ctc)
+                        self.preamps[k].phase_shift = self.phaseoff[k]
                     else:
-                        self.phaseoff = self.preamps[k].phase_shift
+                        self.phaseoff = (k, self.preamps[k].phase_shift)
                 remeas = (change and (remeas or m > js or m < 0.01))
             if (not change and m <= 0.3*js[k] and
                     not np.isnan(self.inc_sensitivity[k])):
