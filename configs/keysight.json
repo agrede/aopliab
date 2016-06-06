@@ -4,4 +4,8 @@
         "formats": ["WORD", "BYTE", "ASC"],
         "points_modes": ["NORM", "MAX", "RAW"]
     }
+    
+    "Keysight2900": {
+        
+    }
 }
