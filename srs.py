@@ -4,6 +4,7 @@ from aopliab_common import within_limits, nearest_index
 import numpy.ma as ma
 from scipy.interpolate import interp1d
 from geninst import PreAmp, LockInAmplifier
+from time import sleep
 
 
 class SR570(PreAmp):
@@ -421,7 +422,8 @@ class SR830():
 
     def adc(self, index):
         if within_limits(index, [0, 3]):
-            return self.inst.query_ascii_values("OAUX? %d" (index+1))[0]
+            return self.inst.query_ascii_values(
+                "OAUX? %d" % (index+1))[0]
         return np.nan
 
     @property
@@ -429,6 +431,28 @@ class SR830():
         rtn = self.inst.query_ascii_values("SNAP? 1,2,5,6,7,8")
         if self.preamps[0] is not None:
             rtn[:2] = rtn[:2]*self.preamps[0].sensitivity
+        return rtn
+
+    def noise_measure(self, tc_noise, tc_mag, slope_noise,
+                      slope_mag):
+        cs = self.slope
+        ctc = self.time_constant
+        rtn = np.zeros((1, 2))
+        self.inst.write("DDEF 1,2,0")
+        self.inst.write("DDEF 2,2,0")
+        self.time_constant = tc_noise
+        self.slope = slope_noise
+        sleep(5.)
+        rtn[0, 1] = np.sqrt(np.power(
+            self.inst.query("SNAP? 10,11"), 2).sum())
+        self.slope = slope_mag
+        self.time_constant = tc_mag
+        sleep(self.wait_time)
+        rtn[0, 0] = self.mag
+        if self.preamps[0] is not None:
+            rtn = rtn*np.preamps[0].sensitivity
+        self.slope = cs
+        self.time_constant = ctc
         return rtn
 
     @property
