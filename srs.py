@@ -227,6 +227,7 @@ class SR830():
 
     inst = None
     config = None
+    preamps = np.array([None])
 
     def __init__(self, inst):
         self.inst = inst
@@ -356,7 +357,7 @@ class SR830():
 
     @property
     def ref_freq(self):
-        return self.inst.query_ascii_values("FREQ?")
+        return self.inst.query_ascii_values("FREQ?")[0]
 
     @ref_freq.setter
     def ref_freq(self, value):
@@ -365,7 +366,7 @@ class SR830():
 
     @property
     def time_constant_index(self):
-        return int(self.query_ascii_values("OFLT?")[0])
+        return int(self.inst.query_ascii_values("OFLT?")[0])
 
     @property
     def time_constant(self):

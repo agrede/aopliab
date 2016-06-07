@@ -99,5 +99,10 @@
         "manufacturer": "Keithely",
         "model": "K6430",
         "addr": "GPIB0::18::INSTR"
+    },
+    "SRSLockin": {
+        "manufacturer": "SRS",
+        "model": "SR830",
+        "addr": "GPIB0::1::INSTR"
     }
 }
