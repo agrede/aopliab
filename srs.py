@@ -221,7 +221,7 @@ class SR570(PreAmp):
         return self.bw[gmi](self.sensitivity)
 
 
-class SR830():
+class SR830(LockInAmplifier):
     """
     PyVISA wrapper for SR830 Lock-in amplifier
     """
@@ -281,17 +281,31 @@ class SR830():
 
     @property
     def senss(self):
-        return self.senssall[:, self.imode]
+        return self.senssall[:, [self.imode]]
+
+    @property
+    def sensitivity_index(self):
+        return np.array([int(self.inst.query_ascii_values("SENS?")[0])])
 
     @property
     def sensitivity(self):
-        sen = int(self.inst.query_ascii_values("SENS?")[0])
-        return self.senss[sen]
+        return np.array([self.senss[self.sensitivity_index[0], 0]])
 
     @sensitivity.setter
     def sensitivity(self, value):
-        idx = nearest_index(value, self.senss, True)
-        self.inst.write("SENS %d" % self.senss[idx])
+        if type(value) is np.ndarray:
+            for k, v in value:
+                idx = nearest_index(v, self.senss[:, k], True)
+                if k == 0:
+                    self.inst.write("SENS %d" % idx)
+        elif type(value) is tuple:
+            k, v = value
+            idx = nearest_index(v, self.senss[:, k], True)
+            if k == 0:
+                self.inst.write("SENS %d" % idx)
+        else:
+            idx = nearest_index(value, self.senss[:, 0], True)
+            self.inst.write("SENS %d" % idx)
 
     @property
     def reserve_mode(self):
@@ -400,7 +414,7 @@ class SR830():
     @slope.setter
     def slope(self, value):
         idx = nearest_index(value, self.slopes, False)
-        self.inst.write("SLOPE %d" % idx)
+        self.inst.write("OFSL %d" % idx)
 
     def system_auto_phase(self, idx):
         self.inst.write("APHS")
@@ -415,7 +429,7 @@ class SR830():
 
     @property
     def cmags(self):
-        rtn = self.inst.query_ascii_values("OUTP? 3")
+        rtn = np.array(self.inst.query_ascii_values("OUTP? 3"))
         if self.preamps[0] is not None:
             rtn = rtn[0]*self.preamps[0].sensitivity
         return rtn
@@ -428,7 +442,7 @@ class SR830():
 
     @property
     def cmeas(self):
-        rtn = self.inst.query_ascii_values("SNAP? 1,2,5,6,7,8")
+        rtn = np.array(self.inst.query_ascii_values("SNAP? 1,2,5,6,7,8"))
         if self.preamps[0] is not None:
             rtn[:2] = rtn[:2]*self.preamps[0].sensitivity
         return rtn
@@ -444,7 +458,8 @@ class SR830():
         self.slope = slope_noise
         sleep(5.)
         rtn[0, 1] = np.sqrt(np.power(
-            self.inst.query("SNAP? 10,11"), 2).sum())
+            np.array(self.inst.query_ascii_values("SNAP? 10,11")), 
+            2).sum()/self.enbw)
         self.slope = slope_mag
         self.time_constant = tc_mag
         sleep(self.wait_time)
