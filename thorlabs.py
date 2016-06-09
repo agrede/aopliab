@@ -322,7 +322,7 @@ class FW102C():
     @property
     def current_filter_off(self):
         if self.filters is not None:
-            return (2.*self.filters[self.position-1])
+            return (2.*self.filters[self.position-1, 3])
         else:
             return np.nan
 
