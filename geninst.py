@@ -45,6 +45,8 @@ class PreAmp():
         nidx = self.sensitivity_index - 1
         if nidx < 0 or self.max_output < curlev/self.senss[nidx]:
             return np.nan
+        if self.freq_cutoff(self.senss[nidx]) <= self.current_freq:
+            return np.nan
         return self.senss[nidx]
 
     @property
@@ -53,8 +55,6 @@ class PreAmp():
         if nidx >= self.senss.size:
             return np.nan
         nsens = self.senss[nidx]
-        if self.freq_cutoff(nsens) >= self.current_freq:
-            return np.nan
         return nsens
 
     @property
@@ -237,18 +237,19 @@ class LockInAmplifier():
                     js[k] = js[k]*self.preamps[k].sensitivity/cps
                     cps = self.preamps[k].sensitivity
                     change = True
-                elif m <= 0.3*js:
-                    nps = self.preamps.inc_sensitivity
+                elif m <= 0.3*js[k]:
+                    nps = self.preamps[k].inc_sensitivity
                     if not np.isnan(nps):
                         self.preamps[k].sensitivity = nps
                         cps = nps
                         change = True
-                if m >= 0.9*js:
+                if m >= 0.9*js[k]:
                     nps = self.preamps[k].dec_sensitivity
                     if not np.isnan(nps):
                         self.preamps[k].sensitivity = nps
                         cps = nps
                         change = True
+                sleep(0.1)
                 if self.preamps[k].overload:
                     self.preamps[k].fix_overload()
                     m = m*self.preamps[k].sensitivity/cps
@@ -257,15 +258,15 @@ class LockInAmplifier():
                     change = True
                 if self.auto_phase and change:
                     if np.isnan(self.preamps[k].phase_shift):
-                        ctc = self.time_constant[k]
+                        ctc = self.time_constant
                         self.time_constant = self.auto_phase_tc
                         sleep(self.wait_time)
                         self.system_auto_phase(k)
-                        self.time_constant = (k, ctc)
+                        self.time_constant = ctc
                         self.preamps[k].phase_shift = self.phaseoff[k]
                     else:
                         self.phaseoff = (k, self.preamps[k].phase_shift)
-                remeas = (change and (remeas or m > js[k] or m < 0.1*js[k]))
+                remeas = (remeas or (change and (m > js[k] or m < 0.1*js[k])))
             if (not change and m <= 0.3*js[k] and
                     not np.isnan(self.inc_sensitivity[k])):
                 self.sensitivity = (k, self.inc_sensitivity[k])
@@ -273,12 +274,12 @@ class LockInAmplifier():
             elif (not change and m >= 0.9*js[k] and
                   not np.isnan(self.dec_sensitivity[k])):
                 self.sensitivity = (k, self.dec_sensitivity[k])
-                remeas = (remeas or m > self.sensitivity[k])
+                remeas = (remeas or m > js[k])
         return remeas
 
     def update_timeconstant(self, mags):
         remeas = np.any(
-            self.tolerance(mags) >
+            self.tolerance(mags) <
             (self.approx_noise(mags)/np.sqrt(self.enbw)))
         dfs = np.power(self.tolerance(mags)/self.approx_noise(mags), 2)
         tcs = np.zeros(mags.size)

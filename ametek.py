@@ -5,6 +5,7 @@ from aopliab_common import within_limits, nearest_index
 from time import sleep
 from geninst import LockInAmplifier
 import numpy.ma as ma
+from pyvisa.util import from_ascii_block
 
 
 class SR7230(LockInAmplifier):
@@ -135,13 +136,14 @@ class SR7230(LockInAmplifier):
             sns = np.zeros(2)
             sns[0] = self.query("SEN1.")[0]
             sns[1] = self.query("SEN2.")[0]
+            return sns
         else:
             return np.array(self.query("SEN."))
 
     @sensitivity.setter
     def sensitivity(self, value):
         if type(value) is np.ndarray:
-            for k, v in value:
+            for k, v in enumerate(value):
                 idx = nearest_index(v, self.senss[:, k], True)+3
                 if self.ref_mode > 0:
                     self.write("SEN%d %d" % (k+1, idx))
@@ -288,7 +290,7 @@ class SR7230(LockInAmplifier):
 
     def system_auto_phase(self, idx):
         if self.ref_mode > 0:
-            self.write("AQN%d" % (k+1))
+            self.write("AQN%d" % (idx+1))
         else:
             self.write("AQN")
 
@@ -427,10 +429,10 @@ class SR7230(LockInAmplifier):
             cbd = 0b1100000111100000011
             idxs = np.array([[0, 1], [6, 7]])
         self.write("CBD %d" % cbd)
-        rtn = self.query("?")
+        rtn = np.array(self.query("?"))
         for k, ks in enumerate(idxs):
             if self.preamps[k] is not None:
-                rtn[ks] = rtn[ks]*np.preamps[k].sensitivity
+                rtn[ks] = rtn[ks]*self.preamps[k].sensitivity
         return rtn
 
     @property
@@ -443,11 +445,62 @@ class SR7230(LockInAmplifier):
             mags = np.array(self.query("MAG."))
         for k, m in enumerate(mags):
             if self.preamps[k] is not None:
-                mags[k] = mags[k]*np.preamps[k].sensitivity
+                mags[k] = mags[k]*self.preamps[k].sensitivity
         return mags
 
-    def adc(self, index):
-        return self.query("ADC. %d" % (index+1))[0]
+    def adc(self, index, periods=2, min_number=500, fast=True, peak=True):
+        index = int(index)
+        if not within_limits(index, [0, 3]):
+            return np.nan
+        ctc = self.time_constant
+        cfm = self.filter_fast_mode
+        cnm = self.noise_mode
+        if fast and index < 2:
+            self.filter_fast_mode = True
+            self.write("TADC 3")
+            self.write("CMODE 1")
+            self.write("STR 2")
+            points = int(np.ceil(periods*5e5/self.freq))
+        else:
+            self.noise_mode = False
+            self.filter_fast_mode = False
+            self.write("TADC 0")
+            self.write("CMODE 0")
+            self.write("STR 1000")
+            points = int(np.ceil(periods*1e3/self.freq))
+        if points < min_number:
+            points = min_number
+        if points > 100000:
+            points = 100000
+        self.write("LEN %d" % points)
+        self.write("CBD %d" % (2**(8+index)))
+        self.write("NC")
+        self.write("TD")
+        wait = True
+        m = [0, 0, 0, 0]
+        while wait:
+            m = [int(x) for x in self.query("M")]
+            wait = m[1] < 1 or m[0] > 0
+        if m[1] < 1:
+            return np.nan
+        values = np.zeros(points)
+        if fast and index < 2:
+            self.inst.write("DC %d" % (index+3))
+            tmp = self.inst.read()
+            self.inst.read_raw()
+            values = 0.001*np.array([from_ascii_block(tmp[:-1], separator='\n')])
+        else:
+            self.inst.write("DC. %d" % (8+index))
+            tmp = self.inst.read()
+            self.inst.read_raw()
+            values = np.array([from_ascii_block(tmp[:-1], separator='\n')])
+        self.filter_fast_mode = cfm
+        self.noise_mode = cnm
+        self.time_constant = ctc
+        if peak:
+            return np.abs(values).max()
+        else:
+            return values
 
     def noise_measure(self, tc_noise, tc_mag, slope_noise,
                       slope_mag):
@@ -477,7 +530,7 @@ class SR7230(LockInAmplifier):
         rtn[:, 0] = self.cmags
         for k in range(rtn.shape[0]):
             if self.preamps[k] is not None:
-                rtn[k, :] = rtn[k, :]*np.preamps[k].sensitivity
+                rtn[k, 1] = rtn[k, 1]*self.preamps[k].sensitivity
         self.slope = cs
         self.time_constant = ctc
         return rtn

@@ -53,6 +53,7 @@ class SR570(PreAmp):
                      np.log(self.limits[:, 3]))])
         self.sensitivity = 1e-3
         self.gain_mode = 0
+        self.phases = np.zeros(self.senss.size)
 
     def close(self):
         self.inst.close()
@@ -211,14 +212,14 @@ class SR570(PreAmp):
         gmi = self._gain_mode_index
         if gmi > 1:
             gmi = 0
-        return self.bw[gmi](sens)
+        return np.exp(self.bw[gmi](np.log(sens)))
 
     @property
     def noise_base(self):
         gmi = self._gain_mode_index
         if gmi > 1:
             gmi = 0
-        return self.bw[gmi](self.sensitivity)
+        return np.exp(self.noise_bases[gmi](np.log(sens)))
 
 
 class SR830(LockInAmplifier):
