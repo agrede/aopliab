@@ -129,7 +129,7 @@ class SR7230(LockInAmplifier):
             return sns
         else:
             return (np.array([int(x) for x in self.query("SEN")])-3)
-            
+
     @property
     def sensitivity(self):
         if self.ref_mode > 0:
@@ -180,7 +180,7 @@ class SR7230(LockInAmplifier):
 
     @property
     def ac_auto_gain(self):
-        return (int(self.query("AUTOMATIC")) == 1)
+        return (int(self.query("AUTOMATIC")[0]) == 1)
 
     @ac_auto_gain.setter
     def ac_auto_gain(self, value):
@@ -412,14 +412,14 @@ class SR7230(LockInAmplifier):
 
     @property
     def wait_time(self):
-        return self.waittimes[self.time_constant_index, self.slope_index]
+        return self.waittimes.data[self.time_constant_index, self.slope_index]
 
     @property
     def enbw(self):
         if self.noise_mode:
             return self.query("ENBW.")[0]
         else:
-            return self.enbws[self.time_constant_index, self.slope_index]
+            return self.enbws.data[self.time_constant_index, self.slope_index]
 
     @property
     def cmeas(self):
