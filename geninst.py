@@ -5,6 +5,9 @@ from time import sleep
 
 
 class PreAmp():
+    """
+    Generic base class for preamplifiers
+    """
     inst = None
     freqs = np.array([])
     senss = np.array([])
@@ -38,6 +41,7 @@ class PreAmp():
 
     @property
     def inc_sensitivity(self):
+        """Returns next higher incremental sensitivity"""
         if self.adc is not None:
             curlev = np.abs(self.adc()*self.sensitivity)
         else:
@@ -51,6 +55,7 @@ class PreAmp():
 
     @property
     def dec_sensitivity(self):
+        """Returns next lower incremental sensitivity"""
         nidx = self.sensitivity_index + 1
         if nidx >= self.senss.size:
             return np.nan
@@ -59,6 +64,7 @@ class PreAmp():
 
     @property
     def phase_shift(self):
+        """Phase shift for current sensitivity"""
         return self.phases[self.sensitivity_index]
 
     @phase_shift.setter
@@ -67,22 +73,26 @@ class PreAmp():
 
     @property
     def overload(self):
+        """Returns True if currently overloaded"""
         if self.adc is not None:
             return (self.max_output < np.abs(self.adc()))
         else:
             return False
 
     def fix_overload(self):
+        """Attempts to fix overload error and returns final overload state"""
         while (self.overload and not np.isnan(self.dec_sensitivity)):
             self.sensitivity = self.dec_sensitivity
         return self.overload
 
     @property
     def noise_base(self):
+        """Returns baseline noise level of current settings"""
         pass
 
 
 class LockInAmplifier():
+    """Generic base class for lockin-amplifiers"""
     tcons = np.array([])
     slopes = np.array([])
     noise_base = np.array([])
@@ -108,6 +118,7 @@ class LockInAmplifier():
 
     @property
     def senss(self):
+        """List of available sensitivities"""
         pass
 
     @property
@@ -116,6 +127,7 @@ class LockInAmplifier():
 
     @property
     def sensitivity(self):
+        """Current sensitivity (full scale range)"""
         pass
 
     @sensitivity.setter
@@ -124,6 +136,7 @@ class LockInAmplifier():
 
     @property
     def inc_sensitivity(self):
+        """Next higher sensitivity (more sensitive)"""
         nidx = self.sensitivity_index - 1
         rtn = np.ones(nidx.size)
         for k, n in enumerate(nidx):
@@ -135,6 +148,7 @@ class LockInAmplifier():
 
     @property
     def dec_sensitivity(self):
+        """Next lower sensitivity (less sensitive)"""
         nidx = self.sensitivity_index + 1
         rtn = np.ones(nidx.size)
         for k, n in enumerate(nidx):
@@ -146,6 +160,16 @@ class LockInAmplifier():
 
     def noise_measure(self, tc_noise, tc_mag, slope_noise,
                       slope_mag):
+        """
+        Perform noise measurement
+
+        Parameters
+        ----------
+        tc_noise : Filter time constant for noise measurement
+        tc_mag : Filter time constant for magnitude measurement
+        slope_noise: Filter slope for noise measurement
+        slope_mag: Filter slope for magnitude measurement
+        """
         pass
 
     @property
@@ -158,6 +182,7 @@ class LockInAmplifier():
 
     @property
     def wait_time(self):
+        """Dwell time needed to reach 99 percent of value"""
         pass
 
     @property
@@ -170,6 +195,7 @@ class LockInAmplifier():
 
     @property
     def enbw(self):
+        """Equivalent noise bandwidth for current settings"""
         pass
 
     @property
@@ -189,17 +215,21 @@ class LockInAmplifier():
 
     @property
     def cmeas(self):
+        """Current measurement values (accounting for preamp)"""
         pass
 
     @property
     def cmags(self):
+        """Current magnitude values (accounting for preamp)"""
         pass
 
     def adc(self, index):
+        """Reading of analog to digital converter"""
         pass
 
     @property
     def jointSensitivity(self):
+        """Product of sensitivity with preamp sensitivity"""
         sens = self.sensitivity
         for k, slia, pre in zip(range(sens.size), sens, self.preamps):
             if pre is not None:
@@ -208,6 +238,7 @@ class LockInAmplifier():
 
     @property
     def meas(self):
+        """Measurement function with automatic functions"""
         if np.any(np.isnan(self.last_mags)):
             self.last_mags = self.cmags
         scaled = False
@@ -226,6 +257,9 @@ class LockInAmplifier():
         return self.cmeas
 
     def update_scale(self, mags):
+        """
+        Update sensitivities from last measurement magnitudes
+        """
         remeas = False
         js = self.jointSensitivity
         for k, m in enumerate(mags):
@@ -287,6 +321,11 @@ class LockInAmplifier():
         return remeas
 
     def update_timeconstant(self, mags):
+        """
+        Update time constant from last magnitudes
+
+        Uses noise estimates and tolerance settings
+        """
         remeas = np.any(
             self.tolerance(mags) <
             (self.approx_noise(mags)*np.sqrt(self.enbw)))
@@ -327,15 +366,18 @@ class LockInAmplifier():
         return remeas
 
     def best_tc_for_wait(self, wait):
+        """Time constant that will reach at least 99 percent within time"""
         k0, k1 = np.where(self.enbws == self.enbws[self.waittimes <= wait].min())
         return (self.tcons[k0[0]], self.slopes[k1[0]], self.waittimes[k0[0], k1[0]])
 
     def tolerance(self, mags):
+        """Tolerance based on last measured values"""
         return np.vstack((
             mags*self.tol_rel,
             self.tol_abs)).max(axis=0)
 
     def approx_noise(self, mags):
+        """Noise approximation based on slope and baseline"""
         return (np.vstack((
             mags*self.noise_ratio,
             self.noise_base)).max(axis=0))
