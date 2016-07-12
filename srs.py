@@ -422,11 +422,11 @@ class SR830(LockInAmplifier):
 
     @property
     def wait_time(self):
-        return self.waittimes[self.time_constant_index, self.slope_index]
+        return self.waittimes.data[self.time_constant_index, self.slope_index]
 
     @property
     def enbw(self):
-        return self.enbws[self.time_constant_index, self.slope_index]
+        return self.enbws.data[self.time_constant_index, self.slope_index]
 
     @property
     def cmags(self):
@@ -459,7 +459,7 @@ class SR830(LockInAmplifier):
         self.slope = slope_noise
         sleep(5.)
         rtn[0, 1] = np.sqrt(np.power(
-            np.array(self.inst.query_ascii_values("SNAP? 10,11")), 
+            np.array(self.inst.query_ascii_values("SNAP? 10,11")),
             2).sum()/self.enbw)
         self.slope = slope_mag
         self.time_constant = tc_mag

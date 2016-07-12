@@ -101,6 +101,7 @@ class LockInAmplifier():
     enbws = ma.array([])
     waittimes = ma.array([])
     lock_time_constant = True
+    auto_phase_slope = 12
 
     def __init__(self, inst):
         pass
@@ -243,26 +244,34 @@ class LockInAmplifier():
                         self.preamps[k].sensitivity = nps
                         cps = nps
                         change = True
-                if m >= 0.9*js[k]:
-                    nps = self.preamps[k].dec_sensitivity
-                    if not np.isnan(nps):
-                        self.preamps[k].sensitivity = nps
-                        cps = nps
+                    sleep(0.1)
+                    if self.preamps[k].overload:
+                        print("GAHH FUCK")
+                        self.preamps[k].fix_overload()
+                        m = m*self.preamps[k].sensitivity/cps
+                        js[k] = js[k]*self.preamps[k].sensitivity/cps
+                        cps = self.preamps[k].sensitivity
                         change = True
-                sleep(0.1)
-                if self.preamps[k].overload:
-                    self.preamps[k].fix_overload()
-                    m = m*self.preamps[k].sensitivity/cps
-                    js[k] = js[k]*self.preamps[k].sensitivity/cps
-                    cps = self.preamps[k].sensitivity
-                    change = True
+                if m >= 0.9*js[k]:
+                    if not np.isnan(self.dec_sensitivity[k]):
+                        self.sensitivity = (k, self.dec_sensitivity[k])
+                        change = True
+                    else:
+                        nps = self.preamps[k].dec_sensitivity
+                        if not np.isnan(nps):
+                            self.preamps[k].sensitivity = nps
+                            cps = nps
+                            change = True
                 if self.auto_phase and change:
                     if np.isnan(self.preamps[k].phase_shift):
                         ctc = self.time_constant
+                        csl = self.slope
                         self.time_constant = self.auto_phase_tc
+                        self.slope = self.auto_phase_slope
                         sleep(self.wait_time)
                         self.system_auto_phase(k)
                         self.time_constant = ctc
+                        self.slope = csl
                         self.preamps[k].phase_shift = self.phaseoff[k]
                     else:
                         self.phaseoff = (k, self.preamps[k].phase_shift)
@@ -280,7 +289,7 @@ class LockInAmplifier():
     def update_timeconstant(self, mags):
         remeas = np.any(
             self.tolerance(mags) <
-            (self.approx_noise(mags)/np.sqrt(self.enbw)))
+            (self.approx_noise(mags)*np.sqrt(self.enbw)))
         dfs = np.power(self.tolerance(mags)/self.approx_noise(mags), 2)
         tcs = np.zeros(mags.size)
         slopes = np.zeros(mags.size)
@@ -306,6 +315,12 @@ class LockInAmplifier():
         wait = wts[k]
         if wait > self.tol_maxsettle:
             tc, slope, wait = self.best_tc_for_wait(self.tol_maxsettle)
+            if self.wait_time >= wait:
+                remeas = False
+                return False
+        if wait == self.wait_time:
+            remeas = False
+            return False
         remeas = (remeas or self.wait_time < wait)
         self.time_constant = tc
         self.slope = slope

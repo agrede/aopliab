@@ -160,6 +160,10 @@ class PM100D():
     def response(self):
         return self.inst.query_ascii_values("SENS:CORR:POW:RESP?")[0]
 
+    @property
+    def current(self):
+        return self.inst.query_ascii_values("MEAS:CURR?")[0]
+
 
 class CLD1015():
     """
@@ -322,7 +326,8 @@ class FW102C():
     @property
     def current_filter_off(self):
         if self.filters is not None:
-            return (2.*self.filters[self.position-1, 3])
+            idx = self.position
+            return (self.filters[idx-1, 4])
         else:
             return np.nan
 
