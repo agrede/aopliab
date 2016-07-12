@@ -278,12 +278,146 @@ class Keysight2900:
             
     
     ##########################################################################
-    ############################ MEASURE COMMANDS ############################
+    ############################# SENSE COMMANDS #############################
     ##########################################################################        
-    #integration_time - sets the integration time/measurement window for the smu.  
-    #        Setting VOLTage/CURRent/RESistance doesn't matter b/c the time window is common for all values
-    #channel = channel
-    #value = integration time; min = 8E-6s, max = 2s; if you go outside of these bounds, the SMU sets to these values
+    '''integration_time - sets the integration time/measurement window for the smu.  
+        Setting VOLTage/CURRent/RESistance doesn't matter b/c the time window is common for all values.
+    variables...
+        channel = channel # (1 or 2)
+        value = integration time; min = 8E-6s, max = 2s; if you go outside of these bounds, the SMU sets to these values'''
     def integration_time(self, ch, value):    
-        self.inst.write("SENS%d:VOLT:DC:APER %s" %(ch, value))
+        if value == "AUTO":
+            self.inst.write("SENS%d:VOLT:DC:APER:AUTO 1" % (ch))
+        else:
+            self.inst.write("SENS%d:VOLT:DC:APER %s" % (ch, value))
         ################return self.inst.query_ascii_values("SENS%d:VOLT:DC:APER",ch)
+        
+        '''integration_time_NPLC: sets number of power line cycles to measure over
+    variables...
+        channel = channel # (1 or 2)
+        value = integration time; +4E-4 to +100 for 50 Hz or +4.8E-4 to +120 for 60 Hz'''
+    def integration_time_NPLC(self, ch, value):    
+        if value == "DEF" or "Default":
+            self.inst.write("SENS%d:VOLT:NPLC:DEF" % (ch))
+        elif value == "AUTO":
+            self.inst.write("SENS%d:VOLT:NPLC:AUTO 1" % (ch))
+        else:
+            self.inst.write("SENS%d:VOLT:NPLC %s" % (ch, value))
+            
+        '''at_compliance: checks to see if the specified channel has hit compliance
+    variables...
+        channel = channel # (1 or 2)
+        V0_or_I1 = 0 for voltage, 1 for current'''
+    def at_compliance(self, ch, V0_or_I1):
+        if V0_or_I1 == 0:
+            return self.inst.query_ascii_values("SENS%d:VOLT:PROT:TRIP?" % ch)
+        if V0_or_I1 == 1:
+            return self.inst.query_ascii_values("SENS%d:CURR:PROT:TRIP?" % ch )
+
+    '''sense_range_auto: toggles auto ranging for the a given channel/measurement
+    variables...
+        channel = channel # (1 or 2)
+        V0_I1_R2 = 0 for voltage, 1 for current, 2 for resistance
+        value = 0 for no auto ranging, 1 for auto ranging'''
+    def sense_range_auto(self, ch, V0_I1_R2, value):   
+        if V0_I1_R2 == 0:
+            self.inst.write("SENS%d:VOLT:DC:RANG:AUTO %d" % (ch, value))
+        if V0_I1_R2 == 1:
+            self.inst.write("SENS%d:CURR:DC:RANG:AUTO %d" % (ch, value))
+        if V0_I1_R2 == 2:
+            self.inst.write("SENS%d:RES:RANG:AUTO %d" % (ch, value))
+    
+    '''sense_range_mode: toggles measurement speed type
+    variables...
+        channel = channel # (1 or 2)
+        V0_I1 = 0 for voltage, 1 for current
+        value: 0=NORMal, 1=RESolution, 2=SPEed; 0 is default'''
+    def sense_range_mode(self, ch, V0_I1, value):   
+        if V0_I1 == 0:
+            self.inst.write("SENS%d:VOLT:DC:RANG:AUTO:MODE %s" % (ch, value))
+        if V0_I1 == 1:
+            self.inst.write("SENS%d:CURR:DC:RANG:AUTO:MODE %s" % (ch, value))
+            
+    '''sense_range_threshold: sets threshold rate for automatic measurement ranging...
+        channel =channel # (1 or 2)
+        V0_I1 = 0 for voltage, 1 for current
+        value: threshold measurement - 11 to 100; default is 90'''
+    def sense_range_threshold(self, ch, V0_I1, value):   
+        if V0_I1 == 0:
+            self.inst.write("SENS%d:VOLT:DC:RANG:AUTO:THR %s" % (ch, value))
+        if V0_I1 == 1:
+            self.inst.write("SENS%d:CURR:DC:RANG:AUTO:THR %s" % (ch, value))
+            
+    ######NOT WORKING######
+    '''sense_range_auto_ulim: sets the threshold upper limit for automatic measurement ranging...
+        channel =channel # (1 or 2)
+        V0_I1 = 0 for voltage, 1 for current
+        value = MIN, MAX, DEFault, or a number'''
+    def sense_range_auto_ulim(self, ch, V0_I1_R2, value):
+        if V0_I1_R2 == 0:
+            self.inst.write("SENS%d:VOLT:DC:RANG:AUTO:ULIM %s" % (ch, value))
+        if V0_I1_R2 == 1:
+            self.inst.write("SENS%d:CURR:DC:RANG:AUTO:ULIM %s" % (ch, value))
+        if V0_I1_R2 == 2:
+            self.inst.write("SENS%d:RES:RANG:AUTO:ULIM %s" % (ch, value))
+    
+    '''sense_range_auto_llim: sets the threshold lower limit for automatic measurement ranging...
+        channel =channel # (1 or 2)
+        V0_I1 = 0 for voltage, 1 for current
+        value = MIN, MAX, DEFault, or a number'''
+    def sense_range_auto_llim(self, ch, V0_I1_R2, value):
+        if V0_I1_R2 == 0:
+            self.inst.write("SENS%d:VOLT:DC:RANG:AUTO:LLIM %s" % (ch, value))
+        if V0_I1_R2 == 1:
+            self.inst.write("SENS%d:CURR:DC:RANG:AUTO:LLIM %s" % (ch, value))
+        if V0_I1_R2 == 2:
+            self.inst.write("SENS%d:RES:RANG:AUTO:LLIM %s" % (ch, value))
+#    def sense_range_ulim:
+
+    '''sense_range_ulim: sets the measurement range upper limit to best meet measurement resolution...
+        channel =channel # (1 or 2)
+        V0_I1 = 0 for voltage, 1 for current
+        value = UP, DOWN, MIN, MAX, DEFault, or a number'''
+    def sense_range_ulim(self, ch, V0_I1_R2, value):
+        if V0_I1_R2 == 0:
+            self.inst.write("SENS%d:VOLT:DC:RANG:UPP %s" % (ch, value))
+        if V0_I1_R2 == 1:
+            self.inst.write("SENS%d:CURR:DC:RANG:UPP %s" % (ch, value))
+        if V0_I1_R2 == 2:
+            self.inst.write("SENS%d:RES:RANG:UPP %s" % (ch, value))
+
+    '''sense_measurements: sets the measurements to be taken
+        channel =channel # (1 or 2)
+        meas_volt/curr/res = 0 for off/ 1 for on; resistance measurements turn both voltage/current on'''
+    def sense_measurements(self, ch, meas_volt, meas_curr, meas_res):
+        #turn all channels off
+        self.inst.write("SENS%d:FUNC:OFF:ALL" % ch)
+ 
+        #concatenate string with selected values    
+        sv = '"VOLT"' if meas_volt else ""
+        sc = '"CURR"' if meas_curr else ""
+        sr = '"RES"' if meas_res else ""
+        
+        #remove any empty values before concatenation, then send values to be turned on
+        msg = ",".join(filter(None,[sv, sc, sr]))
+        self.inst.write('SENS%d:FUNC:ON %s' % (ch, msg))
+
+        #return the channels that are on
+        return self.inst.query_ascii_values("SENS%d:FUNC:ON?"  % ch, converter = 's')
+
+
+    
+    ##########################################################################
+    ############################ HYBRID COMMANDS #############################
+    ##########################################################################
+            
+    def compliance(self, ch, V0_or_I1, value):
+        if V0_or_I1 == 0:
+            self.inst.write("SOUR%d:FUNC:MODE VOLT" % (ch))
+            self.inst.write("SENS%d:VOLT:PROT %f" % (ch, value))
+        if V0_or_I1 == 1:
+            self.inst.write("SOUR%d:FUNC:MODE CURR" % (ch))
+            self.inst.write("SENS%d:CURR:PROT %f" % (ch, value))
+#        else:
+#            self.inst.query_ascii_values("")
+            
