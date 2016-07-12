@@ -160,6 +160,10 @@ class PM100D():
     def response(self):
         return self.inst.query_ascii_values("SENS:CORR:POW:RESP?")[0]
 
+    @property
+    def current(self):
+        return self.inst.query_ascii_values("MEAS:CURR?")[0]
+
 
 class CLD1015():
     """
@@ -241,27 +245,105 @@ class CLD1015():
 
 class FW102C():
     """
+<<<<<<< variant A
     PyVisa wrapper for motorized filter wheel
+>>>>>>> variant B
+    PyVISA wrapper for Motorized filter wheel
+======= end
     """
 
-    filters = np.array([])
-    clear_pos = 5
+    _filters = None
+    _qrx = re.compile('.*\r(.*)')
 
     def __init__(self, inst):
         self.inst = inst
 
-    @property
-    def position_limits(self):
-        return np.array([0, int(self.inst.query_ascii_values("pcount?")[0])-1])
+    def close(self):
+        self.inst.close()
+
+    def query(self, value):
+        tmp = self.inst.query(value)
+        return float(self._qrx.match(tmp).group(1))
+
+    def write(self, value):
+        self.inst.write(value)
+        self.inst.read_raw()
 
     @property
     def position(self):
-        return int(self.inst.query_ascii_values("pos?")[0])-1
+        return int(self.query("pos?"))
 
     @position.setter
     def position(self, value):
+        value = int(value)
         if within_limits(value, self.position_limits):
-            self.inst.write("pos=%d" % (value+1))
+            self.write("pos=%d" % value)
 
-    def clear_filter(self):
-        self.position = self.clear_pos
+    @property
+    def position_limits(self):
+        tmp = int(self.query("pcount?"))
+        return np.array([1, tmp])
+
+    @property
+    def fast_change(self):
+        return (int(self.query("speed?")) == 1)
+
+    @fast_change.setter
+    def fast_change(self, value):
+        if value:
+            self.write("speed=1")
+        else:
+            self.write("speed=0")
+
+    @property
+    def trig_out(self):
+        return (int(self.query("trig?")) == 1)
+
+    @trig_out.setter
+    def trig_out(self, value):
+        if value:
+            self.write("trig=1")
+        else:
+            self.write("trig=0")
+
+    @property
+    def sensors_active(self):
+        return (int(self.query("sensors?")) == 1)
+
+    @sensors_active.setter
+    def sensors_active(self, value):
+        if value:
+            self.write("sensors=1")
+        else:
+            self.write("sensors=0")
+
+    @property
+    def next_filter_on(self):
+        if self.filters is not None:
+            idx = self.position
+            if self.position >= self.filters.shape[0]:
+                idx = 0
+            return self.filters[idx, 4]
+        else:
+            return np.nan
+
+    @property
+    def current_filter_off(self):
+        if self.filters is not None:
+            idx = self.position
+            return (self.filters[idx-1, 4])
+        else:
+            return np.nan
+
+    def higher_order_od(self, wavelength):
+        if self.filters is not None:
+            if np.all(~np.isnan(self.filters[self.position-1, :])):
+                fltr = self.filters[self.position-1, :]
+                if wavelength < fltr[3]:
+                    return fltr[1]
+                elif wavelength > fltr[4]:
+                    return fltr[2]
+                else:
+                    slp = np.diff(fltr[1:3])/np.diff(fltr[3:])
+                    return (slp*(wavelength-fltr[3])+fltr[1])
+        return np.nan

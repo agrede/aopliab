@@ -1,9 +1,13 @@
-import numpy as np
 import json
+import numpy as np
 from aopliab_common import within_limits, nearest_index
+import numpy.ma as ma
+from scipy.interpolate import interp1d
+from geninst import PreAmp, LockInAmplifier
+from time import sleep
 
 
-class SR570():
+class SR570(PreAmp):
     """
     PyVISA wrapper for SRS SR570 Transimpedance amplifier
     """
@@ -21,10 +25,9 @@ class SR570():
     _lp_freq_index = 15
     _hp_freq_index = 0
     _filter_index = 5
-    freqs = np.array([])
     currs = np.array([])
-    senss = np.array([])
     config = None
+    preamps = np.array([None])
 
     def __init__(self, inst):
         self.inst = inst
@@ -35,8 +38,22 @@ class SR570():
         self.config = cfg['SR570']
         self.freqs = np.array(self.config['frequencies'])
         self.currs = np.array(self.config['currents'])
-        self.senss = np.array(self.config['sensitivities'])
+        tmp = np.array(self.config['sensitivities'])
+        self.senss = ma.masked_where(tmp < 0, tmp)
+        self.limits = np.array(self.config['sensitivity_limits'])
+        self.bw = np.array([
+            interp1d(np.log(self.limits[:, 0]),
+                     np.log(self.limits[:, 2])),
+            interp1d(np.log(self.limits[:, 0]),
+                     np.log(self.limits[:, 1]))])
+        self.noise_bases = np.array([
+            interp1d(np.log(self.limits[:, 0]),
+                     np.log(self.limits[:, 4])),
+            interp1d(np.log(self.limits[:, 0]),
+                     np.log(self.limits[:, 3]))])
         self.sensitivity = 1e-3
+        self.gain_mode = 0
+        self.phases = np.zeros(self.senss.size)
 
     def close(self):
         self.inst.close()
@@ -140,6 +157,10 @@ class SR570():
         return nearest_index(sens, self.senss, rndup)
 
     @property
+    def sensitivity_index(self):
+        return self._sens_index
+
+    @property
     def sensitivity(self):
         return self.senss[self._sens_index]
 
@@ -186,3 +207,290 @@ class SR570():
 
     def reset_overload(self):
         self.inst.write("ROLD")
+
+    def freq_cutoff(self, sens):
+        gmi = self._gain_mode_index
+        if gmi > 1:
+            gmi = 0
+        return np.exp(self.bw[gmi](np.log(sens)))
+
+    @property
+    def noise_base(self):
+        gmi = self._gain_mode_index
+        if gmi > 1:
+            gmi = 0
+        return np.exp(self.noise_bases[gmi](np.log(sens)))
+
+
+class SR830(LockInAmplifier):
+    """
+    PyVISA wrapper for SR830 Lock-in amplifier
+    """
+
+    inst = None
+    config = None
+    preamps = np.array([None])
+
+    def __init__(self, inst):
+        self.inst = inst
+        cfg_file = open("configs/srs.json")
+        cfg = json.load(cfg_file)
+        cfg_file.close()
+        self.config = cfg['SR830']
+        tmp = np.array(self.config['time_constants'])
+        self.tcons = ma.masked_where(tmp < 0., tmp)
+        tmp = np.array(self.config['sensitivities'])
+        self.senssall = ma.masked_where(tmp < 0., tmp)
+        tmp = np.array(self.config['slopes'])
+        self.slopes = ma.masked_where(tmp < 0., tmp)
+        bwm = np.atleast_2d(self.config['slope_enbw'])
+        sw = np.atleast_2d(self.config['slope_wait'])
+        tc = np.atleast_2d(self.tcons).T
+        self.enbws = bwm/tc
+        self.waittimes = sw*tc
+
+    @property
+    def imode(self):
+        return int(self.inst.query_ascii_values("ISRC?")[0])
+
+    @imode.setter
+    def imode(self, value):
+        if within_limits(value, [0, 3]):
+            self.inst.write("ISRC %d" % value)
+
+    @property
+    def float_shield(self):
+        return (int(self.inst.query_ascii_values("IGND?")[0]) == 0)
+
+    @float_shield.setter
+    def float_shield(self, value):
+        if (value):
+            self.inst.write("IGND 0")
+        else:
+            self.inst.write("IGND 1")
+
+    @property
+    def dc_couple(self):
+        return (int(self.inst.query_ascii_values("ICPL?")) == 1)
+
+    @dc_couple.setter
+    def dc_couple(self, value):
+        if (value):
+            self.inst.write("ICPL 1")
+        else:
+            self.inst.write("ICPL 0")
+
+    @property
+    def senss(self):
+        return self.senssall[:, [self.imode]]
+
+    @property
+    def sensitivity_index(self):
+        return np.array([int(self.inst.query_ascii_values("SENS?")[0])])
+
+    @property
+    def sensitivity(self):
+        return np.array([self.senss[self.sensitivity_index[0], 0]])
+
+    @sensitivity.setter
+    def sensitivity(self, value):
+        if type(value) is np.ndarray:
+            for k, v in value:
+                idx = nearest_index(v, self.senss[:, k], True)
+                if k == 0:
+                    self.inst.write("SENS %d" % idx)
+        elif type(value) is tuple:
+            k, v = value
+            idx = nearest_index(v, self.senss[:, k], True)
+            if k == 0:
+                self.inst.write("SENS %d" % idx)
+        else:
+            idx = nearest_index(value, self.senss[:, 0], True)
+            self.inst.write("SENS %d" % idx)
+
+    @property
+    def reserve_mode(self):
+        return int(self.inst.query_ascii_values("RMOD?")[0])
+
+    @reserve_mode.setter
+    def reserve_mode(self, value):
+        if within_limits(value, [0, 2]):
+            self.inst.write("RMOD %d" % value)
+
+    @property
+    def line_filter(self):
+        return int(self.inst.query_ascii_values("ILIN?")[0])
+
+    @line_filter.setter
+    def line_filter(self, value):
+        if within_limits(value, [0, 3]):
+            self.inst.write("ILIN %d" % value)
+
+    @property
+    def fmod(self):
+        return int(self.inst.query_ascii_values("FMOD?")[0])
+
+    @fmod.setter
+    def fmod(self, value):
+        if within_limits(value, [0, 1]):
+            self.inst.write("FMOD %d" % value)
+
+    @property
+    def rslp(self):
+        return int(self.inst.query_ascii_values("RSLP?")[0])
+
+    @rslp.setter
+    def rslp(self, value):
+        if within_limits(value, [0, 2]):
+            self.inst.write("RSLP %d" % value)
+
+    @property
+    def harm(self):
+        return int(self.inst.query_ascii_values("HARM?")[0])
+
+    @harm.setter
+    def harm(self, value):
+        if within_limits(value, [1, 19999]):
+            self.inst.write("HARM %d" % value)
+
+    @property
+    def slvl(self):
+        return self.inst.query_ascii_values("SLVL?")
+
+    @slvl.setter
+    def slvl(self, value):
+        if within_limits(value, [0.004, 5.00]):
+            self.inst.write("SLVL %0.3e" % value)
+
+    @property
+    def ref_phase(self):
+        return self.inst.query_ascii_values("PHAS?")[0]
+
+    @ref_phase.setter
+    def ref_phase(self, value):
+        if within_limits(value, [-360.0, 729.99]):
+            self.inst.write("PHAS %0.2e" % value)
+
+    @property
+    def ref_freq(self):
+        return self.inst.query_ascii_values("FREQ?")[0]
+
+    @ref_freq.setter
+    def ref_freq(self, value):
+        if within_limits(value, [0.001, 102e3]):
+            self.inst.write("FREQ %0.5e" % value)
+
+    @property
+    def time_constant_index(self):
+        return int(self.inst.query_ascii_values("OFLT?")[0])
+
+    @property
+    def time_constant(self):
+        return self.tcons[self.time_constant_index]
+
+    @time_constant.setter
+    def time_constant(self, value):
+        idx = nearest_index(value, self.tcons, True)
+        self.inst.write("OFLT %d" % idx)
+
+    @property
+    def filter_sync(self):
+        return (int(self.inst.query_ascii_values("SYNC?")[0]) == 1)
+
+    @filter_sync.setter
+    def filter_sync(self, value):
+        if (value):
+            self.inst.write("SYNC 1")
+        else:
+            self.isnt.write("SYNC 0")
+
+    @property
+    def slope_index(self):
+        return int(self.inst.query_ascii_values("OFSL?")[0])
+
+    @property
+    def slope(self):
+        return self.slopes[self.slope_index]
+
+    @slope.setter
+    def slope(self, value):
+        idx = nearest_index(value, self.slopes, False)
+        self.inst.write("OFSL %d" % idx)
+
+    def system_auto_phase(self, idx):
+        self.inst.write("APHS")
+
+    @property
+    def wait_time(self):
+        return self.waittimes.data[self.time_constant_index, self.slope_index]
+
+    @property
+    def enbw(self):
+        return self.enbws.data[self.time_constant_index, self.slope_index]
+
+    @property
+    def cmags(self):
+        rtn = np.array(self.inst.query_ascii_values("OUTP? 3"))
+        if self.preamps[0] is not None:
+            rtn = rtn[0]*self.preamps[0].sensitivity
+        return rtn
+
+    def adc(self, index):
+        if within_limits(index, [0, 3]):
+            return self.inst.query_ascii_values(
+                "OAUX? %d" % (index+1))[0]
+        return np.nan
+
+    @property
+    def cmeas(self):
+        rtn = np.array(self.inst.query_ascii_values("SNAP? 1,2,5,6,7,8"))
+        if self.preamps[0] is not None:
+            rtn[:2] = rtn[:2]*self.preamps[0].sensitivity
+        return rtn
+
+    def noise_measure(self, tc_noise, tc_mag, slope_noise,
+                      slope_mag):
+        cs = self.slope
+        ctc = self.time_constant
+        rtn = np.zeros((1, 2))
+        self.inst.write("DDEF 1,2,0")
+        self.inst.write("DDEF 2,2,0")
+        self.time_constant = tc_noise
+        self.slope = slope_noise
+        sleep(5.)
+        rtn[0, 1] = np.sqrt(np.power(
+            np.array(self.inst.query_ascii_values("SNAP? 10,11")),
+            2).sum()/self.enbw)
+        self.slope = slope_mag
+        self.time_constant = tc_mag
+        sleep(self.wait_time)
+        rtn[0, 0] = self.mag
+        if self.preamps[0] is not None:
+            rtn = rtn*np.preamps[0].sensitivity
+        self.slope = cs
+        self.time_constant = ctc
+        return rtn
+
+    @property
+    def x(self):
+        return self.inst.query_ascii_values("OUTP? 1")[0]
+
+    @property
+    def y(self):
+        return self.inst.query_ascii_values("OUTP? 1")[0]
+
+    @property
+    def xy(self):
+        return self.inst.query_ascii_values("SNAP? 1,2")
+
+    @property
+    def mag(self):
+        return self.inst.query_ascii_values("OUTP? 3")[0]
+
+    @property
+    def phase(self):
+        return self.inst.query_ascii_values("OUTP? 4")[0]
+
+    @property
+    def magphase(self):
+        return self.inst.query_ascii_values("SNAP? 3,4")

@@ -79,8 +79,30 @@
     },
     "FilterWheel": {
         "manufacturer": "ThorLabs",
-        "model": "Manual6",
-        "filters": [0, 400, 550, 830]
+        "model": "FW102C",
+        "addr": "ASRL13::INSTR",
+        "conn_params": {
+            "baud_rate": 115200,
+            "data_bits": 8,
+            "stop_bits": 1,
+            "write_termination": ["<CR>"],
+            "read_termination": ["<CR>", "> "]
+        },
+        "filter_columns": [
+            "Cut on [nm]",
+            "Block OD",
+            "Pass OD",
+            "3dB from block [nm]",
+            "3dB from pass [nm]"
+        ],
+        "filters": [
+            [400, 4.0, 4.9e-2, 385.5, 402.0],
+            [550, 5.0, 0.01, 526.9, 552.1],
+            [830, 4.7, 0.45, 664.7, 826.0],
+            [1025,10.0, 0.17, 955, 1035],
+            [null, null, null, null, null],
+            [null, null, null, null, null]
+        ]
     },
     "OScope": {
         "manufacturer": "Keysight",
@@ -96,5 +118,22 @@
         "manufacturer": "Keithely",
         "model": "K6430",
         "addr": "GPIB0::18::INSTR"
+    },
+    "SRSLockin": {
+        "manufacturer": "SRS",
+        "model": "SR830",
+        "addr": "GPIB0::1::INSTR"
+    },
+    "ArdMeg": {
+        "manufacturer": "ArdMeg",
+        "model": "ArdMeg",
+        "addr": "ASRL14::INSTR",
+        "conn_params": {
+            "baud_rate": 9600,
+            "data_bits": 8,
+            "stop_bits": 1,
+            "write_termination": ["<LF>"],
+            "read_termination": ["<LF>"]
+        }
     }
 }

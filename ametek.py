@@ -1,19 +1,20 @@
-import numpy as np
 import json
+import numpy as np
 import collections
 from aopliab_common import within_limits, nearest_index
+from time import sleep
+from geninst import LockInAmplifier
+import numpy.ma as ma
+from pyvisa.util import from_ascii_block
 
 
-class SR7230():
+class SR7230(LockInAmplifier):
     """
     PyVISA wrapper for 7230 DSP Lock-in Amplifier
     """
 
     inst = None
     gains = np.array([])
-    senss = np.array([])
-    tcons = np.array([])
-    slopes = np.array([])
     config = None
     separator = ","
 
@@ -24,9 +25,17 @@ class SR7230():
         cfg_file.close()
         self.config = cfg['SR7230']
         self.gains = np.array(self.config['acgains'])
-        self.tcons = np.array(self.config['time_constants'])
-        self.senss = np.array(self.config['sensitivities'])
-        self.slopes = np.array(self.config['slopes'])
+        tmp = np.array(self.config['time_constants'])
+        self.tcons = ma.masked_where(tmp < 0., tmp)
+        tmp = np.array(self.config['sensitivities'])
+        self.senssall = ma.masked_where(tmp < 0., tmp)
+        tmp = np.array(self.config['slopes'])
+        self.slopes = ma.masked_where(tmp < 0., tmp)
+        bwm = np.atleast_2d(self.config['slope_enbw'])
+        sw = np.atleast_2d(self.config['slope_wait'])
+        tc = np.atleast_2d(self.tcons).T
+        self.enbws = bwm/tc
+        self.waittimes = sw*tc
 
     def query(self, str):
         tmp1 = self.inst.query_ascii_values(str, separator=self.separator)
@@ -102,14 +111,54 @@ class SR7230():
             self.write("DCCOUPLE 0")
 
     @property
+    def senss(self):
+        idx = self.imode
+        if self.ref_mode == 0:
+            return self.senssall[:, [idx]]
+        elif self.ref_mode == 1:
+            return self.senssall[:, [idx, idx]]
+        else:
+            return self.senssall[:, [idx, 0]]
+
+    @property
+    def sensitivity_index(self):
+        if self.ref_mode > 0:
+            sns = np.array([0, 0])
+            sns[0] = int(self.query("SEN1")[0])-3
+            sns[1] = int(self.query("SEN2")[0])-3
+            return sns
+        else:
+            return (np.array([int(x) for x in self.query("SEN")])-3)
+
+    @property
     def sensitivity(self):
-        return self.query("SEN.")[0]
+        if self.ref_mode > 0:
+            sns = np.zeros(2)
+            sns[0] = self.query("SEN1.")[0]
+            sns[1] = self.query("SEN2.")[0]
+            return sns
+        else:
+            return np.array(self.query("SEN."))
 
     @sensitivity.setter
     def sensitivity(self, value):
-        imde = self.imode()
-        idx = nearest_index(value, self.senss[:, imde+1], True)
-        self.write("SENS %d" % self.senss[idx, 0])
+        if type(value) is np.ndarray:
+            for k, v in enumerate(value):
+                idx = nearest_index(v, self.senss[:, k], True)+3
+                if self.ref_mode > 0:
+                    self.write("SEN%d %d" % (k+1, idx))
+                elif k == 0:
+                    self.write("SEN %d" % idx)
+        elif type(value) is tuple:
+            k, v = value
+            idx = nearest_index(v, self.senss[:, k], True)+3
+            if self.ref_mode > 0:
+                self.write("SEN%d %d" % (k+1, idx))
+            elif k == 0:
+                self.write("SEN %d" % idx)
+        else:
+            idx = nearest_index(v, self.senss[:, 0], True)+3
+            self.write("SEN %d" % idx)
 
     def run_auto_sensitivity(self):
         self.write("AS")
@@ -131,7 +180,7 @@ class SR7230():
 
     @property
     def ac_auto_gain(self):
-        return (int(self.query("AUTOMATIC")) == 1)
+        return (int(self.query("AUTOMATIC")[0]) == 1)
 
     @ac_auto_gain.setter
     def ac_auto_gain(self, value):
@@ -170,7 +219,7 @@ class SR7230():
 
     @property
     def ref_source(self):
-        return int(self.query("IE"))
+        return int(self.query("IE")[0])
 
     @ref_source.setter
     def ref_source(self, value):
@@ -211,16 +260,39 @@ class SR7230():
             self.write("REFMON %d" % value)
 
     @property
-    def ref_phase(self):
-        return self.query_ascii_values("REFP.")[0]
+    def phaseoff(self):
+        if self.ref_mode > 0:
+            phs = np.zeros(2)
+            phs[0] = self.query("REFP1.")[0]
+            phs[1] = self.query("REFP2.")[0]
+            return phs
+        else:
+            return np.array(self.query("REFP."))
 
-    @ref_phase.setter
-    def ref_phase(self, value):
-        if (within_limits(value, [-360.0, 360.0])):
+    @phaseoff.setter
+    def phaseoff(self, value):
+        if type(value) is np.ndarray:
+            for k, v in value:
+                if within_limits(v, [-360.0, 360.0]):
+                    if self.ref_mode > 0:
+                        self.write("REFP%d. %f" % (k+1, v))
+                    elif k == 0:
+                        self.write("REFP. %f" % v)
+        elif type(value) is tuple:
+            k, v = value
+            if within_limits(v, [-360.0, 360.0]):
+                if self.ref_mode > 0:
+                    self.write("REFP%d. %f" % (k+1, v))
+                elif k == 0:
+                    self.write("REFP. %f" % v)
+        elif within_limits(value, [-360.0, 360.0]):
             self.write("REFP. %f" % value)
 
-    def run_auto_phase(self):
-        self.write("AQN")
+    def system_auto_phase(self, idx):
+        if self.ref_mode > 0:
+            self.write("AQN%d" % (idx+1))
+        else:
+            self.write("AQN")
 
     @property
     def freq(self):
@@ -260,16 +332,30 @@ class SR7230():
             self.write("NNBUF %d" % value)
 
     @property
-    def filter_time_constant(self):
-        return self.query("TC.")[0]
+    def time_constant_index(self):
+        if self.ref_mode > 0:
+            return (int(self.query("TC1")[0]))
+        else:
+            return (int(self.query("TC")[0]))
 
-    @filter_time_constant.setter
-    def filter_time_constant(self, value):
+    @property
+    def time_constant(self):
+        if self.ref_mode > 0:
+            return self.query("TC1.")[0]
+        else:
+            return self.query("TC.")[0]
+
+    @time_constant.setter
+    def time_constant(self, value):
         if (self.noise_mode):
-            idx = 5+nearest_index(value, [5e-4, 1e-3, 2e-3, 5e-3, 1e-2], True)
+            idx = 5+nearest_index(value, np.array([5e-4, 1e-3, 2e-3, 5e-3, 1e-2]), True)
         else:
             idx = nearest_index(value, self.tcons, True)
-        self.write("TC %d" % idx)
+        if self.ref_mode > 0:
+            self.write("TC1 %d" % idx)
+            self.write("TC2 %d" % idx)
+        else:
+            self.write("TC %d" % idx)
 
     @property
     def filter_frequency(self):
@@ -291,16 +377,27 @@ class SR7230():
             self.write("SYNC 0")
 
     @property
-    def filter_slope(self):
-        return self.slopes[int(self.query("SLOPE")[0])]
+    def slope_index(self):
+        if self.ref_mode > 0:
+            return int(self.query("SLOPE1")[0])
+        else:
+            return int(self.query("SLOPE")[0])
 
-    @filter_slope.setter
-    def filter_slope(self, value):
+    @property
+    def slope(self):
+        return self.slopes[self.slope_index]
+
+    @slope.setter
+    def slope(self, value):
         if (self.noise_mode or self.filter_fast_mode):
-            idx = nearest_index(value, self.slopes[0, 1], False)
+            idx = nearest_index(value, self.slopes[[0, 1]], False)
         else:
             idx = nearest_index(value, self.slopes, False)
-        self.write("SLOPE %d" % idx)
+        if self.ref_mode > 0:
+            self.write("SLOPE1 %d" % idx)
+            self.write("SLOPE2 %d" % idx)
+        else:
+            self.write("SLOPE %d" % idx)
 
     @property
     def filter_fast_mode(self):
@@ -314,25 +411,126 @@ class SR7230():
             self.write("FASTMODE 0")
 
     @property
-    def x(self):
-        return self.query("X.")[0]
+    def wait_time(self):
+        return self.waittimes.data[self.time_constant_index, self.slope_index]
 
     @property
-    def y(self):
-        return self.query("Y.")[0]
+    def enbw(self):
+        if self.noise_mode:
+            return self.query("ENBW.")[0]
+        else:
+            return self.enbws.data[self.time_constant_index, self.slope_index]
 
     @property
-    def xy(self):
-        return self.query("XY.")
+    def cmeas(self):
+        cbd = 0b111100000011
+        idxs = np.array([[0, 1]])
+        if self.ref_mode > 0:
+            cbd = 0b1100000111100000011
+            idxs = np.array([[0, 1], [6, 7]])
+        self.write("CBD %d" % cbd)
+        rtn = np.array(self.query("?"))
+        for k, ks in enumerate(idxs):
+            if self.preamps[k] is not None:
+                rtn[ks] = rtn[ks]*self.preamps[k].sensitivity
+        return rtn
 
     @property
-    def mag(self):
-        return self.query("MAG.")[0]
+    def cmags(self):
+        if self.ref_mode > 0:
+            mags = np.zeros(2)
+            mags[0] = self.query("MAG1.")[0]
+            mags[1] = self.query("MAG2.")[0]
+        else:
+            mags = np.array(self.query("MAG."))
+        for k, m in enumerate(mags):
+            if self.preamps[k] is not None:
+                mags[k] = mags[k]*self.preamps[k].sensitivity
+        return mags
 
-    @property
-    def phase(self):
-        return self.query("PHA.")[0]
+    def adc(self, index, periods=2, min_number=500, fast=True, peak=True):
+        index = int(index)
+        if not within_limits(index, [0, 3]):
+            return np.nan
+        ctc = self.time_constant
+        cfm = self.filter_fast_mode
+        cnm = self.noise_mode
+        if fast and index < 2:
+            self.filter_fast_mode = True
+            self.write("TADC 3")
+            self.write("CMODE 1")
+            self.write("STR 2")
+            points = int(np.ceil(periods*5e5/self.freq))
+        else:
+            self.noise_mode = False
+            self.filter_fast_mode = False
+            self.write("TADC 0")
+            self.write("CMODE 0")
+            self.write("STR 1000")
+            points = int(np.ceil(periods*1e3/self.freq))
+        if points < min_number:
+            points = min_number
+        if points > 100000:
+            points = 100000
+        self.write("LEN %d" % points)
+        self.write("CBD %d" % (2**(8+index)))
+        self.write("NC")
+        self.write("TD")
+        wait = True
+        m = [0, 0, 0, 0]
+        while wait:
+            m = [int(x) for x in self.query("M")]
+            wait = m[1] < 1 or m[0] > 0
+        if m[1] < 1:
+            return np.nan
+        values = np.zeros(points)
+        if fast and index < 2:
+            self.inst.write("DC %d" % (index+3))
+            tmp = self.inst.read()
+            self.inst.read_raw()
+            values = 0.001*np.array([from_ascii_block(tmp[:-1], separator='\n')])
+        else:
+            self.inst.write("DC. %d" % (8+index))
+            tmp = self.inst.read()
+            self.inst.read_raw()
+            values = np.array([from_ascii_block(tmp[:-1], separator='\n')])
+        self.filter_fast_mode = cfm
+        self.noise_mode = cnm
+        self.time_constant = ctc
+        if peak:
+            return np.abs(values).max()
+        else:
+            return values
 
-    @property
-    def magphase(self):
-        return self.query("MP.")
+    def noise_measure(self, tc_noise, tc_mag, slope_noise,
+                      slope_mag):
+        cs = self.slope
+        ctc = self.time_constant
+        self.noise_mode = True
+        self.noise_buff_len = 4
+        self.time_constant = tc_noise
+        self.slope = slope_noise
+        if self.ref_mode > 0:
+            y2n = np.zeros(int(10./self.wait_time))
+            rtn = np.zeros((2, 2))
+            for k in range(y2n.size):
+                sleep(self.wait_time)
+                y2n[k] = self.query("Y2.")[0]
+            rtn[0, 1] = self.query("NHZ.")[0]
+            rtn[1, 1] = y2n.std()/np.sqrt(self.enbw)
+        else:
+            rtn = np.zeros((1, 2))
+            sleep(10.)
+            rtn[0, 1] = self.query("NHZ.")[0]
+        self.noise_mode = False
+        self.filter_fast_mode = False
+        self.slope = slope_mag
+        self.time_constant = tc_mag
+        sleep(self.wait_time)
+        rtn[:, 0] = self.cmags
+        for k in range(rtn.shape[0]):
+            if self.preamps[k] is not None:
+                rtn[k, 1] = rtn[k, 1]*self.preamps[k].sensitivity
+        self.slope = cs
+        self.time_constant = ctc
+        return rtn

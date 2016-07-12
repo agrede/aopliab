@@ -41,19 +41,31 @@ class SpecPro():
         tmp = c_int(32)
         self._dll.ARC_get_Mono_Grating(self._mono, byref(tmp))
         return tmp.value
-        
+<<<<<<< variant A
+
+>>>>>>> variant B
+
+======= end
     @grating.setter
     def grating(self, value):
         value = int(value)
         if self.grating_installed(value):
             self._dll.ARC_set_Mono_Grating(self._mono, c_int(value))
-        
+<<<<<<< variant A
+
+>>>>>>> variant B
+
+======= end
     @property
     def grating_range(self):
         tmp = c_int(32)
         self._dll.ARC_get_Mono_Grating_Max(self._mono, byref(tmp))
         return np.array([1, tmp.value])
-        
+<<<<<<< variant A
+
+>>>>>>> variant B
+
+======= end
     def grating_installed(self, value):
         value = int(value)
         if within_limits(value, self.grating_range):
