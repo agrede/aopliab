@@ -92,4 +92,9 @@
         "model": "K6430",
         "addr": "GPIB0::18::INSTR"
     }
+    "PSMU": {
+        "manufacturer": "Keysight",
+        "model": "B2912A",
+        "addr": "USB0::0x0957::0x8E18::MY51141103::0::INSTR"
+    },
 }

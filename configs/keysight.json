@@ -6,6 +6,8 @@
     }
     
     "Keysight2900": {
-        
+        "Integration_settings": [0.0, 60]    
+                     
+                     
     }
 }

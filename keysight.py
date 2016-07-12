@@ -211,50 +211,79 @@ class Keysight2900:
         value - 0 = beeper off, 1 = beeper on'''
     def beep(self, value):
         if (value):
-            self.inst.write(":SYST:BEEP:STAT ON")
+            self.inst.write("SYST:BEEP:STAT ON")
         else:
-            self.inst.write(":SYST:BEEP:STAT OFF")
+            self.inst.write("SYST:BEEP:STAT OFF")
             
     '''disp - set display on or off
     Variables...
         value - 0 = display off, 1 = display on'''
     def disp(self, value):
         if (value):
-            self.inst.write(":DISP:ENAB ON")
+            self.inst.write("DISP:ENAB ON")
         else:
-            self.inst.write(":DISP:ENAB OFF")
+            self.inst.write("DISP:ENAB OFF")
             
     '''Error message is read one by one by using the :SYST:ERR? command. This
     command reads and removes the top item in the error buffer, and returns the code
     and message.'''
     def error_single(self):
-        msg = self.inst.query(":SYST:ERR?")
+        msg = self.inst.query("SYST:ERR?")
         print(msg)
          
     '''All error messages are read and then cleared'''
     def error_all(self):
-        msg = self.inst.query(":SYST:ERR:ALL?")
+        msg = self.inst.query("SYST:ERR:ALL?")
         print(msg)
     
     ##########################################################################
     ############################# FETCH COMMANDS #############################
     ##########################################################################
     
-    '''Pull Voltage, Current, and resistance measurements for channels 1-2
+    '''Pull all voltage, current, and resistance measurements for channels 1-2
     Variables...
         ch1 - 0 = get data for channel 1; 1 = ignore channel 1
         ch2 - 0 = get data for channel 2; 1 = ignore channel 2'''
-    def get_data(self,ch1,ch2):
+    def fetch_all_data(self,ch1,ch2):
         if(ch1 and (not ch2)):
-            return self.inst.query_ascii_values(":FETC:ARR? [@1]")
+            return self.inst.query_ascii_values("FETC:ARR? [@1]")
         elif( (not ch1) and ch2):
-            return self.inst.query_ascii_values(":FETC:ARR? [@2]")
+            return self.inst.query_ascii_values("FETC:ARR? [@2]")
         elif(ch1 and ch2):
-            return self.inst.query_ascii_values(":FETC:ARR? [@1,2]")
+            return self.inst.query_ascii_values("FETC:ARR? [@1,2]")
         else:
-            return "Nothing happens with neither channel selected, dufus."
+            print("Nothing happens with neither channel selected, dufus.")
             
         
     ##########################################################################
-    ############################ FORMAT COMMANDS #############################
+    ############################ MEASURE COMMANDS ############################
     ##########################################################################
+    '''Executes a spot (one-shot) measurement for the parameters specified by
+    ***:SENSe:FUNCtion[:ON]*** command, and returns the measurement result data
+    specified by the :FORMat:ELEMents:SENSe command. Measurement conditions
+    must be set by SCPI commands or front panel operation before executing this
+    command.
+    Variables...
+        ch1 - 0 = get data for channel 1; 1 = ignore channel 1
+        ch2 - 0 = get data for channel 2; 1 = ignore channel 2'''
+    def measure_single_data(self,ch1,ch2):
+        if(ch1 and (not ch2)):
+            return self.inst.query_ascii_values("MEAS? [@1]")
+        elif( (not ch1) and ch2):
+            return self.inst.query_ascii_values("MEAS? [@2]")
+        elif(ch1 and ch2):
+            return self.inst.query_ascii_values("MEAS? [@1,2]")
+        else:
+            print("Nothing happens with neither channel selected, dufus.")
+            
+    
+    ##########################################################################
+    ############################ MEASURE COMMANDS ############################
+    ##########################################################################        
+    #integration_time - sets the integration time/measurement window for the smu.  
+    #        Setting VOLTage/CURRent/RESistance doesn't matter b/c the time window is common for all values
+    #channel = channel
+    #value = integration time; min = 8E-6s, max = 2s; if you go outside of these bounds, the SMU sets to these values
+    def integration_time(self, ch, value):    
+        self.inst.write("SENS%d:VOLT:DC:APER %s" %(ch, value))
+        ################return self.inst.query_ascii_values("SENS%d:VOLT:DC:APER",ch)

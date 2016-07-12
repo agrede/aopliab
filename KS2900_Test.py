@@ -20,7 +20,12 @@ print('\n Start Testing \n')
 #smu.disp(1)
 #smu.identity()
 #smu.error_single()
-#smu.error_all()
-smu.get_data(1,0)
+smu.error_all()
+
+smu.integration_time(2,1E5)
 
 
+print('\n Stop Testing \n')
+#Untested...
+#smu.get_data(1,0)
+#smu.measure_single_data(0,1)
