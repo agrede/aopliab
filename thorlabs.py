@@ -245,11 +245,7 @@ class CLD1015():
 
 class FW102C():
     """
-<<<<<<< variant A
     PyVisa wrapper for motorized filter wheel
->>>>>>> variant B
-    PyVISA wrapper for Motorized filter wheel
-======= end
     """
 
     _filters = None
