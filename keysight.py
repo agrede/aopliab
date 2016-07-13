@@ -236,48 +236,7 @@ class Keysight2900:
     '''All error messages are read and then cleared'''
     def error_all(self):
         msg = self.inst.query("SYST:ERR:ALL?")
-        print(msg)
-    
-    ##########################################################################
-    ############################# FETCH COMMANDS #############################
-    ##########################################################################
-    
-    '''Pull all voltage, current, and resistance measurements for channels 1-2
-    Variables...
-        ch1 - 0 = get data for channel 1; 1 = ignore channel 1
-        ch2 - 0 = get data for channel 2; 1 = ignore channel 2'''
-    def fetch_all_data(self,ch1,ch2):
-        if(ch1 and (not ch2)):
-            return self.inst.query_ascii_values("FETC:ARR? [@1]")
-        elif( (not ch1) and ch2):
-            return self.inst.query_ascii_values("FETC:ARR? [@2]")
-        elif(ch1 and ch2):
-            return self.inst.query_ascii_values("FETC:ARR? [@1,2]")
-        else:
-            print("Nothing happens with neither channel selected, dufus.")
-            
-        
-    ##########################################################################
-    ############################ MEASURE COMMANDS ############################
-    ##########################################################################
-    '''Executes a spot (one-shot) measurement for the parameters specified by
-    ***:SENSe:FUNCtion[:ON]*** command, and returns the measurement result data
-    specified by the :FORMat:ELEMents:SENSe command. Measurement conditions
-    must be set by SCPI commands or front panel operation before executing this
-    command.
-    Variables...
-        ch1 - 0 = get data for channel 1; 1 = ignore channel 1
-        ch2 - 0 = get data for channel 2; 1 = ignore channel 2'''
-    def measure_single_data(self,ch1,ch2):
-        if(ch1 and (not ch2)):
-            return self.inst.query_ascii_values("MEAS? [@1]")
-        elif( (not ch1) and ch2):
-            return self.inst.query_ascii_values("MEAS? [@2]")
-        elif(ch1 and ch2):
-            return self.inst.query_ascii_values("MEAS? [@1,2]")
-        else:
-            print("Nothing happens with neither channel selected, dufus.")
-            
+        print(msg)            
     
     ##########################################################################
     ############################# SENSE COMMANDS #############################
@@ -308,7 +267,7 @@ class Keysight2900:
             
         '''at_compliance: checks to see if the specified channel has hit compliance
     variables...
-        channel = channel # (1 or 2)
+        ch = channel # (1 or 2)
         V0_or_I1 = 0 for voltage, 1 for current'''
     def at_compliance(self, ch, V0_or_I1):
         if V0_or_I1 == 0:
@@ -316,6 +275,16 @@ class Keysight2900:
         if V0_or_I1 == 1:
             return self.inst.query_ascii_values("SENS%d:CURR:PROT:TRIP?" % ch )
 
+    '''sense_remote: enables or disables 4/four-wire sensing
+    variables...
+        ch = channel #
+        value = 1 for 4 point, any other value is 2 point'''
+    def sense_remote(self, ch, value):
+        if value == 1:
+            self.inst.write("SENS%d:REM 1" % ch)
+        else:
+            self.inst.write("SENS%d:REM 0" % ch)
+            
     '''sense_range_auto: toggles auto ranging for the a given channel/measurement
     variables...
         channel = channel # (1 or 2)
@@ -496,11 +465,61 @@ class Keysight2900:
             self.inst.write("OUTP%d:STATE 1" % ch)
         else:
             self.inst.write("OUTP%d:STATE 0" % ch)
+     
             
     ##########################################################################
-    ############################ HYBRID COMMANDS #############################
+    ############################# FETCH COMMANDS #############################
     ##########################################################################
+    
+    '''Pull all voltage, current, and resistance measurements for channels 1-2
+    Variables...
+        ch1 - 0 = get data for channel 1; 1 = ignore channel 1
+        ch2 - 0 = get data for channel 2; 1 = ignore channel 2'''
+    def fetch_all_data(self,ch1,ch2):
+        if(ch1 and (not ch2)):
+            return self.inst.query_ascii_values("FETC:ARR? [@1]")
+        elif( (not ch1) and ch2):
+            return self.inst.query_ascii_values("FETC:ARR? [@2]")
+        elif(ch1 and ch2):
+            return self.inst.query_ascii_values("FETC:ARR? [@1,2]")
+        else:
+            print("Nothing happens with neither channel selected, dufus.")
             
+        
+    ##########################################################################
+    ############################ MEASURE COMMANDS ############################
+    ##########################################################################
+    '''Executes a spot (one-shot) measurement for the parameters specified by
+    ***:SENSe:FUNCtion[:ON]*** command, and returns the measurement result data
+    specified by the :FORMat:ELEMents:SENSe command. Measurement conditions
+    must be set by SCPI commands or front panel operation before executing this
+    command.
+    Variables...
+        ch1 - 0 = get data for channel 1; 1 = ignore channel 1
+        ch2 - 0 = get data for channel 2; 1 = ignore channel 2'''
+    def measure_single_data(self,ch1,ch2):
+        if(ch1 and (not ch2)):
+            return self.inst.query_ascii_values("MEAS? [@1]")
+        elif( (not ch1) and ch2):
+            return self.inst.query_ascii_values("MEAS? [@2]")
+        elif(ch1 and ch2):
+            return self.inst.query_ascii_values("MEAS? [@1,2]")
+        else:
+            print("Nothing happens with neither channel selected, dufus.")
+            
+    ##########################################################################
+    ############################ SOURCE COMMANDS #############################
+    ##########################################################################
+        
+            
+    ##########################################################################
+    ########################## High level commands ###########################
+    ##########################################################################
+    '''compliance - sets the source mode and compliance level
+    variables...
+        ch = channel
+        src_v_or_i: source mode = 0 for voltage, 1 for current
+        value = complaince level in A or V for sourcing voltage or current, respectively'''
     def compliance(self, ch, src_v_or_i, value):
         #source voltage / limit current
         if src_v_or_i == 0:
@@ -516,6 +535,9 @@ class Keysight2900:
         
 
             
-
-#    def setup_dc
-#    def setup_pulse
+################ TO DO:
+    #Set up SOURCe commands for DC and PULSE
+    #Set up automatic sweeping
+    #Choose some combination of FORMat and READ/FETCh/MEASure commands to pull data
+    #Figure out TRIGger commands to set all source/measure/trigger commands to AUTO (under show trigger tab of
+    #   the CH1 (or CH2) source screens).  Alternately, develop algorithm to set the delay and period.

@@ -36,21 +36,22 @@ print('\n Start Testing \n')
 #smu.output_enable(1,1)
 #smu.output_over_protection(1,0)
 #smu.output_off_mode(1,0)
+#smu.output_auto_on(1,0)
+#smu.sense_remote(1,0)
 
-#sort of working...   
 
-
-#maybe working?
 
 
 smu.error_all()
-smu.output_auto_on(1,0)
+
 smu.error_all()
 
 
 
 
 print('\n Stop Testing \n')
+
+#maybe working?
 
 #Not working...
 #smu.integration_time_NPLC(2,1)  #undefined header?
