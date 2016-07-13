@@ -29,16 +29,22 @@ print('\n Start Testing \n')
 #smu.sense_range_auto(1,1,1)
 #smu.sense_range_auto_llim(1,1,"MAX")
 #print(smu.sense_measurements(1,1,1,0))
+#(smu.compliance(1,0,1E-2)
+#smu.output_filter(1,0,20E-6)
+#smu.output_high_capacitance(1,1)
+#smu.output_ground(1,1)
+#smu.output_enable(1,1)
+#smu.output_over_protection(1,0)
+#smu.output_off_mode(1,0)
 
 #sort of working...   
-#smu.compliance(2,0,1E-3)  #doesn't change compliance level unless you change source mode too
+
 
 #maybe working?
 
 
 smu.error_all()
-
-
+smu.output_auto_on(1,0)
 smu.error_all()
 
 

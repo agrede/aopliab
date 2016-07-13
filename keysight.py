@@ -2,6 +2,8 @@ import re
 from aopliab_common import within_limits, json_load, get_bool, set_bool
 import numpy as np
 import weakref
+from time import sleep
+
 
 
 class InfiniiVision5000():
@@ -298,11 +300,11 @@ class Keysight2900:
         value = integration time; +4E-4 to +100 for 50 Hz or +4.8E-4 to +120 for 60 Hz'''
     def integration_time_NPLC(self, ch, value):    
         if value == "DEF" or "Default":
-            self.inst.write("SENS%d:VOLT:NPLC:DEF" % (ch))
+            self.inst.write("SENS%d:VOLT:DC:NPLC:DEF" % ch)
         elif value == "AUTO":
-            self.inst.write("SENS%d:VOLT:NPLC:AUTO 1" % (ch))
+            self.inst.write("SENS%d:VOLT:DC:NPLC:AUTO 1" % ch)
         else:
-            self.inst.write("SENS%d:VOLT:NPLC %s" % (ch, value))
+            self.inst.write("SENS%d:VOLT:DC:NPLC %s" % (ch, value))
             
         '''at_compliance: checks to see if the specified channel has hit compliance
     variables...
@@ -372,7 +374,6 @@ class Keysight2900:
             self.inst.write("SENS%d:CURR:DC:RANG:AUTO:LLIM %s" % (ch, value))
         if V0_I1_R2 == 2:
             self.inst.write("SENS%d:RES:RANG:AUTO:LLIM %s" % (ch, value))
-#    def sense_range_ulim:
 
     '''sense_range_ulim: sets the measurement range upper limit to best meet measurement resolution...
         channel =channel # (1 or 2)
@@ -405,19 +406,116 @@ class Keysight2900:
         #return the channels that are on
         return self.inst.query_ascii_values("SENS%d:FUNC:ON?"  % ch, converter = 's')
 
+    ##########################################################################
+    ############################ OUTPUT COMMANDS #############################
+    ##########################################################################
+    '''output_filter_auto: enables or disables automatic lowpass filter.  If automatic settings
+        are disabled, the filter freq and time const must be set
+    variables...
+    ch - 1 or 2
+    auto0_manual1_off2 - 0 for auto, 1 for manual w/ settings, other numbers for off
+    time const - filter time constant; DEFault, MIN, MAX, or a number between 5 us to 5 ms'''
+    def output_filter(self, ch, auto0_manual1_off2, time_const):
+        if auto0_manual1_off2 == 0:
+            self.inst.write("OUTP%d:FILT:AUTO %d" % (ch, auto0_manual1_off2))
+        elif auto0_manual1_off2 == 1:
+            self.inst.write("OUTP%d:FILT:AUTO %d" % (ch, auto0_manual1_off2))
+            #self.inst.write("OUTP%d:FILT:LPAS:FREQ %e" % (ch, freq))
+            self.inst.write("OUTP%d:FILT:LPAS:TCON %e" % (ch, time_const))
+        else:
+            self.inst.write("OUTP%d:FILT 0" % ch)
+            
+    '''output_high_capacitance: enables or disables high cap mode
+    variables...
+    ch - 1 or 2
+    value - 0 for off, 1 for on'''
+    def output_high_capacitance(self, ch, value):
+        self.inst.write("OUTP%d:HCAP %d" % (ch, value))
 
-    
+    '''output_ground: turns off the source and changes ground state of low terminal
+    variables...
+    ch - 1 or 2
+    value - 0 for float, 1 for ground'''
+    def output_ground(self, ch, value):
+        self.inst.write("OUTP%d:STATE 0" % ch)
+        if value:
+            self.inst.write("OUTP%d:LOW GRO" % ch)
+        else:
+            self.inst.write("OUTP%d:LOW FLO" % ch)
+
+    '''output_off_mode: toggles auto-off for the output
+    variables...
+    ch - 1 or 2
+    value - mode=1 or ON enables the automatic output off function. If this function is enabled,
+        the source output is automatically turned off immediately when the grouped
+        channels change status from busy to idle.'''            
+    def output_auto_off(self, ch, value):
+        self.inst.write("OUTP%d:OFF:AUTO %d" % (ch, value))
+        
+    '''output_off_mode: selects source condition after output off
+    variables...
+    ch - 1 or 2
+    value - 1 for ZERO, 2 for HIZ/high impedance, any other number for NORMal'''
+    def output_off_mode(self, ch, value):
+        if value == 1:
+            self.inst.write("OUTP%d:OFF:MODE HIZ" % ch)
+        elif value == 2:
+            self.inst.write("OUTP%d:OFF:MODE ZERO" % ch)
+        else:
+            self.inst.write("OUTP%d:OFF:MODE NORM" % ch)
+          
+            
+        '''output_on_mode: toggles auto-off for the output
+    variables...
+    ch - 1 or 2
+    value - mode=0 or OFF disables the automatic output on function.
+        mode=1 or ON enables the automatic output on function. If this function is enabled,
+        the source output is automatically turned on when the :INITiate or :READ command
+        is sent.'''            
+    def output_auto_on(self, ch, value):
+        self.inst.write("OUTP%d:ON:AUTO %d" % (ch, value))
+        
+        
+    '''output_over_protection: if the source hits compliance, the output shuts off
+    variables...
+    ch - 1 or 2
+    value - 0 for off, 1 for on'''
+    def output_over_protection(self, ch, value):
+        if value == 1:
+            self.inst.write("OUTP%d:PROT 1" % ch)
+        else:
+            self.inst.write("OUTP%d:PROT 0" % ch)
+
+            
+    '''output_enable: toggles output of a given channel
+    variables...
+    ch - 1 or 2
+    value - 0 for off, 1 for on'''
+    def output_enable(self, ch, value):
+        if value == 1:
+            self.inst.write("OUTP%d:STATE 1" % ch)
+        else:
+            self.inst.write("OUTP%d:STATE 0" % ch)
+            
     ##########################################################################
     ############################ HYBRID COMMANDS #############################
     ##########################################################################
             
-    def compliance(self, ch, V0_or_I1, value):
-        if V0_or_I1 == 0:
+    def compliance(self, ch, src_v_or_i, value):
+        #source voltage / limit current
+        if src_v_or_i == 0:
             self.inst.write("SOUR%d:FUNC:MODE VOLT" % (ch))
-            self.inst.write("SENS%d:VOLT:PROT %f" % (ch, value))
-        if V0_or_I1 == 1:
+            self.inst.write("SENS%d:CURR:PROT %s" % (ch, value))
+            #return " ".join(["Sourcing:",self.inst.query_ascii_values("SOUR%d:FUNC:MODE?" % ch,converter = "s")[0].rstrip("\n"),"Compliance Level:",self.inst.query_ascii_values("SENS%d:CURR:PROT?" % ch,converter = "s")[0].rstrip("\n")])
+        #source current / limit voltage
+        if src_v_or_i == 1:
             self.inst.write("SOUR%d:FUNC:MODE CURR" % (ch))
-            self.inst.write("SENS%d:CURR:PROT %f" % (ch, value))
-#        else:
-#            self.inst.query_ascii_values("")
+            self.inst.write("SENS%d:VOLT:PROT %s" % (ch, value))
+            #return " ".join(["Sourcing:",self.inst.query_ascii_values("SOUR%d:FUNC:MODE?" % ch,converter = "s")[0].rstrip("\n"),"Compliance Level:",self.inst.query_ascii_values("SENS%d:VOLT:PROT?" % ch,converter = "s")[0].rstrip("\n")])
+        
+        
+
             
+
+#    def setup_dc
+#    def setup_pulse
