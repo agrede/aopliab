@@ -39,7 +39,9 @@ print('\n Start Testing \n')
 #smu.output_auto_on(1,0)
 #smu.sense_remote(1,0)
 
-
+#smu.source_output_mode(1,"CURR")
+#smu.set_pulse_delay(1,5E-4)
+#smu.set_pulse_width(1,5E-4)
 
 
 smu.error_all()

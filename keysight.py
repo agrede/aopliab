@@ -510,7 +510,130 @@ class Keysight2900:
     ##########################################################################
     ############################ SOURCE COMMANDS #############################
     ##########################################################################
+        '''Sets the span value of the sweep'''
+    def source_sweep_span(self, ch, V0_I1, value):
+        if V0_I1 == 0:
+            self.inst.write("SOUR%d:VOLT:SPAN %d" % (ch, value))
+        if V0_I1 == 1:
+            self.inst.write("SOUR%d:CURR:SPAN %d" % (ch, value))
+    
+    '''changes the immdiate value of the source output'''
+    def source_immediate_amplitude(self, ch, V0_I1, value):
+        if V0_I1 == 0:
+            self.inst.write("SOUR%d:VOLT:LEV:IMM:AMPL %d" % (ch, value))
+        if V0_I1 == 1:
+            self.inst.write("SOUR%d:CURR:LEV:IMM:AMPL %d" % (ch, value))
+     
+    '''Sets the specified channel to fixed, sweep, 
+    and listed sweep modes. value= FIX,LIST, SWEep'''        
+    def source_mode(self, ch, V0_I1, value):
+        if V0_I1 == 0:
+            self.inst.write("SOUR%s:VOLT:MODE %s" % (ch, value))
+        if V0_I1 == 1:
+            self.inst.write("SOUR%s:CURR:MODE %s" % (ch, value))
+    
+    '''Sets the number of steps in sweep value= 1 to 2500'''        
+    def source_number_sweep_steps(self, ch, V0_I1, value):
+        if V0_I1 ==0:
+            self.inst.write("SOUR%d:VOLT:POIN %d" % (ch, value))
+        if V0_I1 ==1:
+            self.inst.write("SOUR%d:CURR:POIN %d" % (ch, value))
+            
+    '''Sets the output range of the specified channel'''
+    def source_range(self, ch, V0_I1, value):
+        if V0_I1 ==0:
+            self.inst.write("SOUR%d:VOLT:RANG %d" % (ch, value))
+        if V0_I1 ==1:
+            self.inst.write("SOUR%d:CURR:RANG %d" % (ch, value))
+    
+    '''Sets whether auto ranging is on or off. value= 0 or 1'''       
+    def source_auto_range(self, ch, V0_I1, value):
+        if V0_I1 ==0:
+            self.inst.write("SOUR%d:VOLT:RANG:AUTO %d" % (ch, value))
+        if V0_I1 ==1:
+            self.inst.write("SOUR%d:CURR:RANG:AUTO %d" % (ch, value))
+         
+    '''Specifies the lower limit for automatic output ranging'''  
+    def source_auto_range_llim(self, ch, V0_I1, value):
+        if V0_I1 ==0:
+            self.inst.write("SOUR%d:VOLT:RANG:AUTO:LLIM %d" % (ch, value))
+        if V0_I1 ==1:
+            self.inst.write("SOUR%d:CURR:RANG:AUTO:LLIM %d" % (ch, value))  
+     
+    '''Sets sweep span with specified start and stop values'''    
+    def source_start_and_stop_values(self, ch, V0_I1, start, stop):
+        if V0_I1 ==0: 
+            self.inst.write("SOUR%d:VOLT:STAR %d" % (ch, start))
+            self.inst.write("SOUR%d:VOLT:STOP %d" % (ch, stop))
+        if V0_I1 ==1: 
+            self.inst.write("SOUR%d:CURR:STAR %d" % (ch, start))
+            self.inst.write("SOUR%d:CURR:STOP %d" % (ch, stop))
+    
+    '''Sets the intervals between sweep steps'''
+    def source_sweep_step(self, ch, V0_I1, value):
+        if V0_I1 ==0:
+            self.inst.write("SOUR%d:VOLT:STEP %d" % (ch, value))
+        if V0_I1 ==1:
+            self.inst.write("SOUR%d:VOLT:STEP %d" % (ch, value))
+            
+    '''Sets source output mode. Value= VOLTage ot CURRent'''
+    def source_output_mode(self, ch, value):
+            self.inst.write("SOUR%s:FUNC:MODE %s" % (ch, value))
+       
+    '''Sets output shape. value= DC or PULSed'''       
+    def source_output_shape(self, ch, value):
+        self.inst.write("SOUR%s:FUNC:MODE %s" % (ch, value))
         
+    '''Turns on or off continuous triggering value= 0 or 1'''        
+    def source_continuous_trigger(self, ch, value):
+        self.inst.write("SOUR%d:FUNC:MODE %s" % (ch, value))
+    
+    '''Outputs data listed in a set spereated by commas. 
+                value= list, Ex: 1.0,1.1,1.2...'''
+    def source_output_listed_data(self, ch, V0_I1, value):
+        if V0_I1 ==0:
+            self.inst.write("SOUR%d:LIST:VOLT:APP %d" % (ch, value))
+        if V0_I1 ==1:
+            self.inst.write("SOUR%d:LIST:CURR:APP %d" % (ch, value))
+       
+    '''Lists values set for output.'''       
+    def source_list_output_data(self, ch, V0_I1, value):
+        if V0_I1 ==0:
+            self.inst.write("SOUR%d:LIST:VOLT:POIN %d" % (ch, value))
+        if V0_I1 ==1:
+            self.inst.write("SOUR%d:LIST:CURR:POIN %d" % (ch, value))
+       
+    '''Sets pulse delay time'''       
+    def set_pulse_delay(self, ch, value):
+            self.inst.write("SOUR%d:PULS:DEL %e" % (ch, value))
+    
+    '''Sets pulse width time'''
+    def set_pulse_width(self, ch, value):
+            self.inst.write("SOUR%d:PULS:WIDT %e" % (ch, value))
+    
+    '''Sets sweep direction. Value= up or down'''
+    def set_sweep_direction(self, ch, value):
+            self.inst.write("SOUR%s:SWE:DIR %s" % (ch, value))
+            
+    '''Sets number of points in a sweep. value= 1-2500'''
+    def set_number_sweep_points(self, ch, value):
+            self.inst.write("SOUR%d:SWE:POIN %d" % (ch, value))
+            
+    '''Sets the ranging type for sweeped output.
+    value= BEST, AUTO, FIX... BEST is determined by entire sweep
+        AUTO is configured for each step'''
+    def set_sweep_range_type(self, ch, value):
+            self.inst.write("SOUR%s:SWE:RANG %s" % (ch, value))
+            
+    '''Sets sweep scale type. value= LINear or LOGarithmic'''
+    def set_sweep_scaling(self, ch, value):
+            self.inst.write("SOUR%s:SWE:SPAC %s" % (ch, value))
+            
+    '''Sets the sweep type. value= SINGle or DOUBle'''
+    def sweep_mode(self, ch, value):
+        self.inst.write("SOUR%s:SWE:STA %s" % (ch, value))       
+        
+    #wait commands?
             
     ##########################################################################
     ########################## High level commands ###########################
@@ -534,7 +657,7 @@ class Keysight2900:
         
         
 
-            
+  #CASE ID: 8004730329          
 ################ TO DO:
     #Set up SOURCe commands for DC and PULSE
     #Set up automatic sweeping
