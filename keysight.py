@@ -2,7 +2,7 @@ import re
 from aopliab_common import within_limits, json_load, get_bool, set_bool
 import numpy as np
 import weakref
-from time import sleep
+import time
 
 
 
@@ -463,8 +463,10 @@ class Keysight2900:
     def output_enable(self, ch, value):
         if value == 1:
             self.inst.write("OUTP%d:STATE 1" % ch)
+            self.inst.write("OUTP%d ON" % ch)
         else:
             self.inst.write("OUTP%d:STATE 0" % ch)
+            self.inst.write("OUTP%d OFF" % ch)
      
             
     ##########################################################################
@@ -477,11 +479,21 @@ class Keysight2900:
         ch2 - 0 = get data for channel 2; 1 = ignore channel 2'''
     def fetch_all_data(self,ch1,ch2):
         if(ch1 and (not ch2)):
-            return self.inst.query_ascii_values("FETC:ARR? [@1]")
+            return self.inst.query_ascii_values("FETC:ARR? (@1)")
         elif( (not ch1) and ch2):
-            return self.inst.query_ascii_values("FETC:ARR? [@2]")
+            return self.inst.query_ascii_values("FETC:ARR? (@2)")
         elif(ch1 and ch2):
-            return self.inst.query_ascii_values("FETC:ARR? [@1,2]")
+            return self.inst.query_ascii_values("FETC:ARR? (@1,2)")
+        else:
+            print("Nothing happens with neither channel selected, dufus.")
+            
+    def fetch_last_data(self,ch1,ch2):
+        if(ch1 and (not ch2)):
+            return self.inst.query_ascii_values("FETC:SCAL? (@1)")
+        elif( (not ch1) and ch2):
+            return self.inst.query_ascii_values("FETC:SCAL? (@2)")
+        elif(ch1 and ch2):
+            return self.inst.query_ascii_values("FETC:SCAL? (@1,2)")
         else:
             print("Nothing happens with neither channel selected, dufus.")
             
@@ -497,20 +509,20 @@ class Keysight2900:
     Variables...
         ch1 - 0 = get data for channel 1; 1 = ignore channel 1
         ch2 - 0 = get data for channel 2; 1 = ignore channel 2'''
-    def measure_single_data(self,ch1,ch2):
-        if(ch1 and (not ch2)):
-            return self.inst.query_ascii_values("MEAS? [@1]")
-        elif( (not ch1) and ch2):
-            return self.inst.query_ascii_values("MEAS? [@2]")
-        elif(ch1 and ch2):
-            return self.inst.query_ascii_values("MEAS? [@1,2]")
-        else:
-            print("Nothing happens with neither channel selected, dufus.")
+#    def measure_single_data(self,ch1,ch2):
+#        if(ch1 and (not ch2)):
+#            return self.inst.query_ascii_values("MEAS:ARR? (@1)")
+#        elif( (not ch1) and ch2):
+#            return self.inst.query_ascii_values("MEAS:ARR? (@2)")
+#        elif(ch1 and ch2):
+#            return self.inst.query_ascii_values("MEAS:ARR? (@1,2)")
+#        else:
+#            print("Nothing happens with neither channel selected, dufus.")
             
     ##########################################################################
     ############################ SOURCE COMMANDS #############################
     ##########################################################################
-        '''Sets the span value of the sweep'''
+    '''Sets the span value of the sweep'''
     def source_sweep_span(self, ch, V0_I1, value):
         if V0_I1 == 0:
             self.inst.write("SOUR%d:VOLT:SPAN %d" % (ch, value))
@@ -563,18 +575,18 @@ class Keysight2900:
     '''Sets sweep span with specified start and stop values'''    
     def source_start_and_stop_values(self, ch, V0_I1, start, stop):
         if V0_I1 ==0: 
-            self.inst.write("SOUR%d:VOLT:STAR %d" % (ch, start))
-            self.inst.write("SOUR%d:VOLT:STOP %d" % (ch, stop))
+            self.inst.write("SOUR%d:VOLT:STAR %e" % (ch, start))
+            self.inst.write("SOUR%d:VOLT:STOP %e" % (ch, stop))
         if V0_I1 ==1: 
-            self.inst.write("SOUR%d:CURR:STAR %d" % (ch, start))
-            self.inst.write("SOUR%d:CURR:STOP %d" % (ch, stop))
+            self.inst.write("SOUR%d:CURR:STAR %e" % (ch, start))
+            self.inst.write("SOUR%d:CURR:STOP %e" % (ch, stop))
     
     '''Sets the intervals between sweep steps'''
     def source_sweep_step(self, ch, V0_I1, value):
         if V0_I1 ==0:
-            self.inst.write("SOUR%d:VOLT:STEP %d" % (ch, value))
+            self.inst.write("SOUR%d:VOLT:STEP %f" % (ch, value))
         if V0_I1 ==1:
-            self.inst.write("SOUR%d:VOLT:STEP %d" % (ch, value))
+            self.inst.write("SOUR%d:VOLT:STEP %f" % (ch, value))
             
     '''Sets source output mode. Value= VOLTage ot CURRent'''
     def source_output_mode(self, ch, value):
@@ -582,7 +594,7 @@ class Keysight2900:
        
     '''Sets output shape. value= DC or PULSed'''       
     def source_output_shape(self, ch, value):
-        self.inst.write("SOUR%s:FUNC:MODE %s" % (ch, value))
+        self.inst.write("SOUR%s:FUNC:SHAP %s" % (ch, value))
         
     '''Turns on or off continuous triggering value= 0 or 1'''        
     def source_continuous_trigger(self, ch, value):
@@ -611,9 +623,12 @@ class Keysight2900:
     def set_pulse_width(self, ch, value):
             self.inst.write("SOUR%d:PULS:WIDT %e" % (ch, value))
     
-    '''Sets sweep direction. Value= up or down'''
+    '''Sets sweep direction. Value: 0=UP or 1=DOWN'''
     def set_sweep_direction(self, ch, value):
-            self.inst.write("SOUR%s:SWE:DIR %s" % (ch, value))
+        if value ==1:   
+            self.inst.write("SOUR%d:SWE:DIR DOWN" % (ch))
+        else:
+            self.inst.write("SOUR%d:SWE:DIR UP" % (ch))
             
     '''Sets number of points in a sweep. value= 1-2500'''
     def set_number_sweep_points(self, ch, value):
@@ -623,7 +638,13 @@ class Keysight2900:
     value= BEST, AUTO, FIX... BEST is determined by entire sweep
         AUTO is configured for each step'''
     def set_sweep_range_type(self, ch, value):
-            self.inst.write("SOUR%s:SWE:RANG %s" % (ch, value))
+            if value ==0:
+                self.inst.write("SOUR%s:SWE:RANG BEST" % (ch))
+            if value ==1:
+                self.inst.write("SOUR%s:SWE:RANG AUTO" % (ch))
+            if value ==2:
+                self.inst.write("SOUR%s:SWE:RANG FIX" % (ch))
+            
             
     '''Sets sweep scale type. value= LINear or LOGarithmic'''
     def set_sweep_scaling(self, ch, value):
@@ -634,7 +655,40 @@ class Keysight2900:
         self.inst.write("SOUR%s:SWE:STA %s" % (ch, value))       
         
     #wait commands?
+    ##########################################################################
+    ########################### Trigger Commands #############################
+    ##########################################################################
+    '''ch1 - 0 = get data for channel 1; 1 = ignore channel 1
+        ch2 - 0 = get data for channel 2; 1 = ignore channel 2'''
+    def trigger_channel(self,ch1,ch2):
+        if(ch1 and (not ch2)):
+            self.inst.write("ARM:IMM (@1)")
+        elif( (not ch1) and ch2):
+            self.inst.write("ARM:IMM (@2)")
+        elif(ch1 and ch2):
+            self.inst.write("ARM:IMM (@1,2)")
+        else:
+            print("Nothing happens with neither channel selected, dufus.")  
             
+    def initiate_channel(self, ch1, ch2):
+        if(ch1 and (not ch2)):
+            self.inst.write("INIT:IMM:ALL (@1)")
+        elif( (not ch1) and ch2):
+            self.inst.write("INIT:IMM:ALL (@2)")
+        elif(ch1 and ch2):
+            self.inst.write("INIT:IMM:ALL (@1,2)")
+        else:
+            print("Nothing happens with neither channel selected, dufus.") 
+        
+        
+    '''1 to 100000'''
+    def trigger_count(self, ch, value):
+            self.inst.write("TRIG%d:COUN %e" % (ch, value))
+            
+    def trigger_time_interval(self, ch, value):
+            self.inst.write("TRIG%d:TIM %e" % (ch, value))
+            
+    
     ##########################################################################
     ########################## High level commands ###########################
     ##########################################################################
@@ -655,9 +709,39 @@ class Keysight2900:
             self.inst.write("SENS%d:VOLT:PROT %s" % (ch, value))
             #return " ".join(["Sourcing:",self.inst.query_ascii_values("SOUR%d:FUNC:MODE?" % ch,converter = "s")[0].rstrip("\n"),"Compliance Level:",self.inst.query_ascii_values("SENS%d:VOLT:PROT?" % ch,converter = "s")[0].rstrip("\n")])
         
+    def measurement_all(self, ch1, ch2, tmax=300):
+        self.inst.write("INIT")
+        self.inst.write("*OPC?")
+        tm = time.time() + tmax
+        cycles = 0
+        opc = False
+        while (not opc and time.time() < tm):
+            cycles = cycles+1
+            if (self.inst.stb > 0):
+                opc = self.inst.read() == "1\n"
+                break
+        if (opc):
+            return self.fetch_all_data(ch1, ch2)
+        else:
+            return None
         
+    def measurement_single(self, ch1, ch2, tmax=300):
+        self.inst.write("INIT")
+        self.inst.write("*OPC?")
+        tm = time.time() + tmax
+        cycles = 0
+        opc = False
+        while (not opc and time.time() < tm):
+            cycles = cycles+1
+            if (self.inst.stb > 0):
+                opc = self.inst.read() == "1\n"
+                break
+        if (opc):
+            return self.fetch_all_data(ch1, ch2)
+        else:
+            return None
 
-  #CASE ID: 8004730329          
+            
 ################ TO DO:
     #Set up SOURCe commands for DC and PULSE
     #Set up automatic sweeping

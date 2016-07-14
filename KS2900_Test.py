@@ -36,7 +36,7 @@ print('\n Start Testing \n')
 #smu.output_enable(1,1)
 #smu.output_over_protection(1,0)
 #smu.output_off_mode(1,0)
-#smu.output_auto_on(1,0)
+
 #smu.sense_remote(1,0)
 
 #smu.source_output_mode(1,"CURR")
@@ -45,7 +45,26 @@ print('\n Start Testing \n')
 
 
 smu.error_all()
+smu.source_output_mode(1,"VOLT")
+smu.source_output_shape(1,"DC")
+smu.source_mode(1,0,"SWE")
+smu.sweep_mode(1,"SING")
+smu.set_sweep_direction(1,0)
+smu.source_start_and_stop_values(1,0,0,5)
+#smu.source_sweep_step(1,0,.01)
+smu.source_number_sweep_steps(1,0,1000)
 
+smu.compliance(1,0,.150)
+smu.output_auto_on(1,0)
+smu.output_enable(1,1);
+smu.sense_measurements(1,1,1,0)
+
+smu.trigger_time_interval(1,1E-3)
+smu.trigger_count(1,1000)
+smu.trigger_channel(1,1)
+#smu.initiate_channel(1,1)
+
+bitch = smu.measurement_all(1,0)
 smu.error_all()
 
 
