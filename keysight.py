@@ -434,7 +434,7 @@ class Keysight2900:
             self.inst.write("OUTP%d:OFF:MODE NORM" % ch)
           
             
-        '''output_on_mode: toggles auto-off for the output
+    '''output_on_mode: toggles auto-off for the output
     variables...
     ch - 1 or 2
     value - mode=0 or OFF disables the automatic output on function.
@@ -475,8 +475,8 @@ class Keysight2900:
     
     '''Pull all voltage, current, and resistance measurements for channels 1-2
     Variables...
-        ch1 - 0 = get data for channel 1; 1 = ignore channel 1
-        ch2 - 0 = get data for channel 2; 1 = ignore channel 2'''
+        ch1 - 1 = get data for channel 1; 0 = ignore channel 1
+        ch2 - 1 = get data for channel 2; 0 = ignore channel 2'''
     def fetch_all_data(self,ch1,ch2):
         if(ch1 and (not ch2)):
             return self.inst.query_ascii_values("FETC:ARR? (@1)")
@@ -521,35 +521,13 @@ class Keysight2900:
             
     ##########################################################################
     ############################ SOURCE COMMANDS #############################
-    ##########################################################################
-    '''Sets the span value of the sweep'''
-    def source_sweep_span(self, ch, V0_I1, value):
-        if V0_I1 == 0:
-            self.inst.write("SOUR%d:VOLT:SPAN %d" % (ch, value))
-        if V0_I1 == 1:
-            self.inst.write("SOUR%d:CURR:SPAN %d" % (ch, value))
-    
+    ##########################################################################    
     '''changes the immdiate value of the source output'''
-    def source_immediate_amplitude(self, ch, V0_I1, value):
+    def source_value(self, ch, V0_I1, value):
         if V0_I1 == 0:
-            self.inst.write("SOUR%d:VOLT:LEV:IMM:AMPL %d" % (ch, value))
+            self.inst.write("SOUR%d:VOLT:LEV:IMM:AMPL %e" % (ch, value))
         if V0_I1 == 1:
-            self.inst.write("SOUR%d:CURR:LEV:IMM:AMPL %d" % (ch, value))
-     
-    '''Sets the specified channel to fixed, sweep, 
-    and listed sweep modes. value= FIX,LIST, SWEep'''        
-    def source_mode(self, ch, V0_I1, value):
-        if V0_I1 == 0:
-            self.inst.write("SOUR%s:VOLT:MODE %s" % (ch, value))
-        if V0_I1 == 1:
-            self.inst.write("SOUR%s:CURR:MODE %s" % (ch, value))
-    
-    '''Sets the number of steps in sweep value= 1 to 2500'''        
-    def source_number_sweep_steps(self, ch, V0_I1, value):
-        if V0_I1 ==0:
-            self.inst.write("SOUR%d:VOLT:POIN %d" % (ch, value))
-        if V0_I1 ==1:
-            self.inst.write("SOUR%d:CURR:POIN %d" % (ch, value))
+            self.inst.write("SOUR%d:CURR:LEV:IMM:AMPL %e" % (ch, value))
             
     '''Sets the output range of the specified channel'''
     def source_range(self, ch, V0_I1, value):
@@ -572,30 +550,19 @@ class Keysight2900:
         if V0_I1 ==1:
             self.inst.write("SOUR%d:CURR:RANG:AUTO:LLIM %d" % (ch, value))  
      
-    '''Sets sweep span with specified start and stop values'''    
-    def source_start_and_stop_values(self, ch, V0_I1, start, stop):
-        if V0_I1 ==0: 
-            self.inst.write("SOUR%d:VOLT:STAR %e" % (ch, start))
-            self.inst.write("SOUR%d:VOLT:STOP %e" % (ch, stop))
-        if V0_I1 ==1: 
-            self.inst.write("SOUR%d:CURR:STAR %e" % (ch, start))
-            self.inst.write("SOUR%d:CURR:STOP %e" % (ch, stop))
-    
-    '''Sets the intervals between sweep steps'''
-    def source_sweep_step(self, ch, V0_I1, value):
-        if V0_I1 ==0:
-            self.inst.write("SOUR%d:VOLT:STEP %f" % (ch, value))
-        if V0_I1 ==1:
-            self.inst.write("SOUR%d:VOLT:STEP %f" % (ch, value))
             
     '''Sets source output mode. Value= VOLTage ot CURRent'''
-    def source_output_mode(self, ch, value):
+    def source_mode(self, ch, value):
             self.inst.write("SOUR%s:FUNC:MODE %s" % (ch, value))
        
     '''Sets output shape. value= DC or PULSed'''       
-    def source_output_shape(self, ch, value):
-        self.inst.write("SOUR%s:FUNC:SHAP %s" % (ch, value))
-        
+    def source_pulse(self, ch, DC0_pulse1):
+        if DC0_pulse1 == 1:
+            self.inst.write("SOUR%s:FUNC:SHAP PULS" % ch)
+        else:
+            self.inst.write("SOUR%s:FUNC:SHAP DC" % ch)
+            
+            
     '''Turns on or off continuous triggering value= 0 or 1'''        
     def source_continuous_trigger(self, ch, value):
         self.inst.write("SOUR%d:FUNC:MODE %s" % (ch, value))
@@ -623,6 +590,42 @@ class Keysight2900:
     def set_pulse_width(self, ch, value):
             self.inst.write("SOUR%d:PULS:WIDT %e" % (ch, value))
     
+ ########### Sweep #########           
+            
+    '''Sets the span value of the sweep'''
+    def source_sweep_span(self, ch, V0_I1, value):
+        if V0_I1 == 0:
+            self.inst.write("SOUR%d:VOLT:SPAN %d" % (ch, value))
+        if V0_I1 == 1:
+            self.inst.write("SOUR%d:CURR:SPAN %d" % (ch, value))
+            
+    '''Sets the specified channel to fixed, sweep, 
+    and listed sweep modes. value= FIX,LIST, SWEep'''        
+    def source_sweep(self, ch, V0_I1, fix0_sweep1_list2):
+        if V0_I1 == 1:
+            if fix0_sweep1_list2 == 1:
+                self.inst.write("SOUR%s:CURR:MODE SWE" % ch)
+            elif fix0_sweep1_list2 == 2:
+                self.inst.write("SOUR%s:CURR:MODE LIST" % ch)
+            else:
+                self.inst.write("SOUR%s:CURR:MODE FIX" % ch)
+        else:
+            if fix0_sweep1_list2 == 1:
+                self.inst.write("SOUR%s:VOLT:MODE SWE" % ch)
+            elif fix0_sweep1_list2 == 2:
+                self.inst.write("SOUR%s:VOLT:MODE LIST" % ch)
+            else:
+                self.inst.write("SOUR%s:VOLT:MODE FIX" % ch)
+            
+
+    
+    '''Sets the number of steps in sweep value= 1 to 2500'''        
+    def source_number_sweep_steps(self, ch, V0_I1, value):
+        if V0_I1 ==0:
+            self.inst.write("SOUR%d:VOLT:POIN %d" % (ch, value))
+        if V0_I1 ==1:
+            self.inst.write("SOUR%d:CURR:POIN %d" % (ch, value))
+            
     '''Sets sweep direction. Value: 0=UP or 1=DOWN'''
     def set_sweep_direction(self, ch, value):
         if value ==1:   
@@ -645,14 +648,32 @@ class Keysight2900:
             if value ==2:
                 self.inst.write("SOUR%s:SWE:RANG FIX" % (ch))
             
+    '''Sets sweep span with specified start and stop values'''    
+    def source_sweep_range(self, ch, V0_I1, start, stop):
+        if V0_I1 ==0: 
+            self.inst.write("SOUR%d:VOLT:STAR %e" % (ch, start))
+            self.inst.write("SOUR%d:VOLT:STOP %e" % (ch, stop))
+        if V0_I1 ==1: 
+            self.inst.write("SOUR%d:CURR:STAR %e" % (ch, start))
+            self.inst.write("SOUR%d:CURR:STOP %e" % (ch, stop))
+    
+    '''Sets the intervals between sweep steps'''
+    def source_sweep_step(self, ch, V0_I1, value):
+        if V0_I1 ==0:
+            self.inst.write("SOUR%d:VOLT:STEP %f" % (ch, value))
+        if V0_I1 ==1:
+            self.inst.write("SOUR%d:VOLT:STEP %f" % (ch, value))
             
     '''Sets sweep scale type. value= LINear or LOGarithmic'''
     def set_sweep_scaling(self, ch, value):
             self.inst.write("SOUR%s:SWE:SPAC %s" % (ch, value))
             
-    '''Sets the sweep type. value= SINGle or DOUBle'''
-    def sweep_mode(self, ch, value):
-        self.inst.write("SOUR%s:SWE:STA %s" % (ch, value))       
+    '''Sets the sweep type. value: 0 = SINGle or 1 = DOUBle'''
+    def sweep_bidirectional(self, ch, value):
+        if value == 1:
+            self.inst.write("SOUR%s:SWE:STA SING" % ch)       
+        else:
+            self.inst.write("SOUR%s:SWE:STA SING" % ch)       
         
     #wait commands?
     ##########################################################################
@@ -660,17 +681,69 @@ class Keysight2900:
     ##########################################################################
     '''ch1 - 0 = get data for channel 1; 1 = ignore channel 1
         ch2 - 0 = get data for channel 2; 1 = ignore channel 2'''
-    def trigger_channel(self,ch1,ch2):
-        if(ch1 and (not ch2)):
-            self.inst.write("ARM:IMM (@1)")
-        elif( (not ch1) and ch2):
-            self.inst.write("ARM:IMM (@2)")
-        elif(ch1 and ch2):
-            self.inst.write("ARM:IMM (@1,2)")
-        else:
-            print("Nothing happens with neither channel selected, dufus.")  
+    def arm_channel(self,ch):
+        self.inst.write("ARM:IMM (@%d)" % ch)
             
-    def initiate_channel(self, ch1, ch2):
+    def arm_counts(self,ch,value):
+        if value > 10000:
+            self.inst.write("ARM%d:COUN INF" %ch )
+        else:
+            self.inst.write("ARM%d:COUN %d" % (ch, value))
+            
+    def arm_source_period(self, ch, value):
+        self.inst.write("ARM%d:TRAN:TIM %e" % (ch, value))
+    
+    def arm_measure_period(self, ch, value):
+        self.inst.write("ARM%d:ACQ:TIM %e" % (ch, value))
+     
+    def arm_period(self, ch, value):
+        self.inst.write("ARM%d:TIM %e" % (ch, value))
+     
+    def arm_source_delay(self, ch, value):
+        self.inst.write("ARM%d:TRAN:DEL %e" % (ch, value))
+    
+    def arm_measure_delay(self, ch, value):
+        self.inst.write("ARM%d:ACQ:DEL %e" % (ch, value))
+    
+    def arm_delay(self, ch, value):
+        self.inst.write("ARM%d:DEL %e" % (ch, value))  
+            
+            
+            
+            
+            
+            
+            
+            
+            
+       
+        '''1 to 100000'''
+    def trigger_counts(self, ch, value):
+        self.inst.write("TRIG%d:COUN %e" % (ch, value))
+       
+    def trigger_source_period(self, ch, value):
+        self.inst.write("TRIG%d:TRAN:TIM %e" % (ch, value))
+    
+    def trigger_measure_period(self, ch, value):
+        self.inst.write("TRIG%d:ACQ:TIM %e" % (ch, value))
+     
+    def trigger_period(self, ch, value):
+        self.inst.write("TRIG%d:TIM %e" % (ch, value))
+     
+    def trigger_source_delay(self, ch, value):
+        self.inst.write("TRIG%d:TRAN:DEL %e" % (ch, value))
+    
+    def trigger_measure_delay(self, ch, value):
+        self.inst.write("TRIG%d:ACQ:DEL %e" % (ch, value))
+    
+    def trigger_delay(self, ch, value):
+        self.inst.write("TRIG%d:DEL %e" % (ch, value))    
+            
+        
+        
+        
+        
+    def initialize(self, ch1, ch2):
         if(ch1 and (not ch2)):
             self.inst.write("INIT:IMM:ALL (@1)")
         elif( (not ch1) and ch2):
@@ -679,16 +752,9 @@ class Keysight2900:
             self.inst.write("INIT:IMM:ALL (@1,2)")
         else:
             print("Nothing happens with neither channel selected, dufus.") 
+            
         
         
-    '''1 to 100000'''
-    def trigger_count(self, ch, value):
-            self.inst.write("TRIG%d:COUN %e" % (ch, value))
-            
-    def trigger_time_interval(self, ch, value):
-            self.inst.write("TRIG%d:TIM %e" % (ch, value))
-            
-    
     ##########################################################################
     ########################## High level commands ###########################
     ##########################################################################
@@ -741,7 +807,87 @@ class Keysight2900:
         else:
             return None
 
-            
+
+    ''' trigger_setup_dc - sets integration time and triggering for DC spot/sweep measurements'''
+    def trigger_setup_dc(self, ch, npts):
+        self.arm_channel(ch)
+        self.arm_counts(ch,1)
+        self.arm_period(ch, 10E-6)
+        self.arm_delay(ch, 0)
+        
+        self.trigger_period(ch, 10E-6)
+        self.trigger_delay(ch, 0)
+        self.trigger_counts(ch,npts)
+        
+    ''' trigger_dc - sets integration time and triggering for DC spot/sweep measurements'''
+    def trigger_setup_pulse(self, ch, npts):
+        self.arm_channel(ch)
+        self.arm_counts(ch,1)
+        self.arm_period(ch, 10E-6)
+        self.arm_delay(ch, 0)
+        
+        #Make sure that the measurement delay is > 0, and then set it to be towards the end of the pulse
+        meas_delay = float(self.inst.query("SOUR%d:PULS:WIDT?" % ch)) - float(self.inst.query("SENS%d:VOLT:DC:APER?" % ch))*1.1
+        meas_delay = 0 if (meas_delay < 0) else meas_delay
+        
+        
+        self.trigger_period(ch, 10E-6)
+        self.trigger_measure_delay(ch, meas_delay)
+        self.trigger_counts(ch,npts)
+        
+        
+    def dc_internal_LIV(self, bias_start, bias_stop, bias_step, current_limit, int_time):
+        
+        #set ch 1 to source voltage, ch 2 to only read current w/ 100 mA compliance
+        self.compliance(1, 0, current_limit)
+        self.source_auto_range(1, 0, 1)
+        self.compliance(2, 0, 0.1)
+        self.source_auto_range(2, 0, 1)
+        
+        #Set up sense subsystem for integration, sensitivity, etc.
+        self.integration_time(1,int_time)
+        self.sense_measurements(1,1,1,0)
+        self.sense_range_auto(1,0,1)
+        self.sense_range_auto(1,1,1)
+        
+        self.integration_time(2,int_time)
+        self.sense_measurements(2,1,1,0)
+        self.sense_range_auto(1,1,1)        
+        
+        
+        self.source_pulse(1,0)
+        self.sweep_bidirectional(1,0)
+        self.set_sweep_direction(1,0)   #sweeps from low to high
+        self.source_sweep(1,0,1)
+        self.source_sweep_range(1, 0, bias_start, bias_stop)
+        self.source_sweep_step(1, 0, bias_step)
+
+        #If the smu hits compliance stop the sweep
+        self.output_over_protection(1,1)
+        self.output_over_protection(1,1)
+        
+        
+        #Set arm both channels and set trigger delays to 0
+        npts = abs((bias_stop - bias_start)/bias_step) + 1
+        self.trigger_setup_dc(1, npts)
+        self.trigger_setup_dc(2, npts)
+
+        #Initiate both channels and measure data
+        self.output_enable(1,1);
+        self.output_enable(2,1);
+        dat = self.measurement_all(1,1)
+#        dat = np.reshape(dat,[12,np.size(dat)/12])
+        
+        
+        #Disable the sources and collect any errors
+        self.source_value(1,0,0)
+        self.output_enable(1,0)
+        self.source_value(2,0,0)
+        self.output_enable(2,0)        
+        self.error_all()
+        
+        return dat
+
 ################ TO DO:
     #Set up SOURCe commands for DC and PULSE
     #Set up automatic sweeping

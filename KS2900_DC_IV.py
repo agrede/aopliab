@@ -32,9 +32,9 @@ smu.output_auto_on(ch1,1)
 smu.output_enable(ch1,1);
 smu.sense_measurements(ch1,meas volt,meas curr,meas res)
 
-smu.trigger_time_interval(ch1,time_interval)
-smu.trigger_count(ch1,trigger_count)
-smu.trigger_channel(ch1,ch2)
+#smu.trigger_time_interval(ch1,time_interval)
+#smu.trigger_count(ch1,trigger_count)
+#smu.arm(ch)
 #smu.initiate_channel(ch1,ch2)
 
 bitch = smu.measurement_all(ch1,ch2)
