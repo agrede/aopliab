@@ -836,7 +836,7 @@ class Keysight2900:
         self.trigger_counts(ch,npts)
         
         
-    def dc_internal_LIV(self, bias_start, bias_stop, bias_step, current_limit, int_time):
+    def dc_internal_IV(self, bias_start, bias_stop, bias_step, current_limit, int_time):
         
         #set ch 1 to source voltage, ch 2 to only read current w/ 100 mA compliance
         self.compliance(1, 0, current_limit)
@@ -846,47 +846,38 @@ class Keysight2900:
         
         #Set up sense subsystem for integration, sensitivity, etc.
         self.integration_time(1,int_time)
-        self.sense_measurements(1,1,1,0)
-        self.sense_range_auto(1,0,1)
-        self.sense_range_auto(1,1,1)
+        self.sense_measurements(1, 1, 1, 1)
+        self.sense_range_auto(1, 0, 1)
+        self.sense_range_auto(1, 1, 1)
+        self.sense_range_auto(1, 2, 1)
+
         
-        self.integration_time(2,int_time)
-        self.sense_measurements(2,1,1,0)
-        self.sense_range_auto(1,1,1)        
-        
-        
-        self.source_pulse(1,0)
-        self.sweep_bidirectional(1,0)
-        self.set_sweep_direction(1,0)   #sweeps from low to high
-        self.source_sweep(1,0,1)
+        self.source_pulse(1, 0)
+        self.sweep_bidirectional(1, 0)
+        self.set_sweep_direction(1, 0)   #sweeps from low to high
+        self.source_sweep(1, 0, 1)
         self.source_sweep_range(1, 0, bias_start, bias_stop)
         self.source_sweep_step(1, 0, bias_step)
 
         #If the smu hits compliance stop the sweep
-        self.output_over_protection(1,1)
-        self.output_over_protection(1,1)
-        
+        self.output_over_protection(1, 1)        
         
         #Set arm both channels and set trigger delays to 0
         npts = abs((bias_stop - bias_start)/bias_step) + 1
         self.trigger_setup_dc(1, npts)
-        self.trigger_setup_dc(2, npts)
 
         #Initiate both channels and measure data
         self.output_enable(1,1);
-        self.output_enable(2,1);
-        dat = self.measurement_all(1,1)
-#        dat = np.reshape(dat,[12,np.size(dat)/12])
-        
+        dat = self.measurement_all(1,0)
+        dat = np.reshape(dat,[np.size(dat)/6,6])
+        VIR = np.array( [dat[:,0], dat[:,1], dat[:,2]] ).T #return voltage | current | resistance
         
         #Disable the sources and collect any errors
         self.source_value(1,0,0)
-        self.output_enable(1,0)
-        self.source_value(2,0,0)
-        self.output_enable(2,0)        
+        self.output_enable(1,0)    
         self.error_all()
         
-        return dat
+        return VIR
 
 ################ TO DO:
     #Set up SOURCe commands for DC and PULSE
