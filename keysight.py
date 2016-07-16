@@ -538,10 +538,12 @@ class Keysight2900:
         
     '''Sets the output range of the specified channel'''
     def source_range(self, ch, V0_I1, value):
+        value = 200 if (value > 200) else value       
         if V0_I1 ==0:
             self.inst.write("SOUR%d:VOLT:RANG %d" % (ch, value))
         if V0_I1 ==1:
             self.inst.write("SOUR%d:CURR:RANG %d" % (ch, value))
+
     
     '''Sets whether auto ranging is on or off. value= 0 or 1'''       
     def source_auto_range(self, ch, V0_I1, value):
@@ -590,12 +592,15 @@ class Keysight2900:
             self.inst.write("SOUR%d:LIST:CURR:POIN %d" % (ch, value))
        
     '''Sets pulse delay time'''       
-    def set_pulse_delay(self, ch, value):
-            self.inst.write("SOUR%d:PULS:DEL %e" % (ch, value))
+    def pulse_delay(self, ch, value):
+        value = 100E3 if (value > 100E3) else value
+        self.inst.write("SOUR%d:PULS:DEL %e" % (ch, value))
     
     '''Sets pulse width time'''
-    def set_pulse_width(self, ch, value):
-            self.inst.write("SOUR%d:PULS:WIDT %e" % (ch, value))
+    def pulse_width(self, ch, value):
+        value = 50E-6 if (value < 50E-6) else value
+        value = 100E3 if (value > 100E3) else value
+        self.inst.write("SOUR%d:PULS:WIDT %e" % (ch, value))
     
  ########### Sweep #########           
             
@@ -782,7 +787,7 @@ class Keysight2900:
             self.inst.write("SENS%d:VOLT:PROT %s" % (ch, value))
             #return " ".join(["Sourcing:",self.inst.query_ascii_values("SOUR%d:FUNC:MODE?" % ch,converter = "s")[0].rstrip("\n"),"Compliance Level:",self.inst.query_ascii_values("SENS%d:VOLT:PROT?" % ch,converter = "s")[0].rstrip("\n")])
         
-    def measurement_all(self, ch1, ch2, tmax=300):
+    def measurement_all(self, ch1, ch2, tmax=3000):
         #Initialized the selected channels
         if ch1 and (not ch2):
             self.inst.write("INIT (@1)")
@@ -849,7 +854,7 @@ class Keysight2900:
         self.trigger_counts(ch,npts)
         
     ''' trigger_setup_pulse - sets trigger time, delay, and count  for pulsed spot/sweep measurements'''
-    def trigger_setup_pulse(self, ch, npts):
+    def trigger_setup_pulse(self, ch, npts, period):
         self.arm_channel(ch)
         self.arm_counts(ch,1)
         self.arm_period(ch, 10E-6)
@@ -860,18 +865,17 @@ class Keysight2900:
         meas_delay = 0 if (meas_delay < 0) else meas_delay
         
         
-        self.trigger_period(ch, 10E-6)
+        self.trigger_period(ch, period)
         self.trigger_measure_delay(ch, meas_delay)
         self.trigger_counts(ch,npts)
         
-        
-    def dc_internal_IV(self, bias_start, bias_stop, bias_step, current_limit, int_time):
+    ''' dc_internal_IV - performs internal voltage sweep for a single channel'''    
+    def dc_internal_IV(self, bias_start, bias_stop, bias_step, current_limit, compliance_protection,
+                       int_time, timeout):
         
         #set ch 1 to source voltage, ch 2 to only read current w/ 100 mA compliance
         self.compliance(1, 0, current_limit)
         self.source_auto_range(1, 0, 1)
-        self.compliance(2, 0, 0.1)
-        self.source_auto_range(2, 0, 1)
         
         #Set up sense subsystem for integration, sensitivity, etc.
         self.integration_time(1,int_time)
@@ -889,7 +893,7 @@ class Keysight2900:
         self.source_sweep_step(1, 0, bias_step)
 
         #If the smu hits compliance stop the sweep
-        self.output_over_protection(1, 1)        
+        self.output_over_protection(1, compliance_protection)        
         
         #Set arm both channels and set trigger delays to 0
         npts = abs((bias_stop - bias_start)/bias_step) + 1
@@ -897,7 +901,7 @@ class Keysight2900:
 
         #Initiate both channels and measure data
         self.output_enable(1,1);
-        dat = self.measurement_all(1,0)
+        dat = self.measurement_all(1,0, timeout)
         dat = np.reshape(dat,[np.size(dat)/6,6])
         VIR = np.array( [dat[:,0], dat[:,1], dat[:,2]] ).T #return voltage | current | resistance
         
@@ -908,3 +912,113 @@ class Keysight2900:
         
         return VIR
 
+
+    def dc_internal_LIV(self, bias_start, bias_stop, bias_step, current_limit, photocurrent_limit, 
+                        compliance_protection, int_time, timeout):
+        
+        #set ch 1 to source voltage, ch 2 to only read current w/ 100 mA compliance
+        self.compliance(1, 0, current_limit)
+        self.source_auto_range(1, 0, 1)
+        self.compliance(2, 0, photocurrent_limit)
+        self.source_auto_range(2, 0, 1)
+        
+        #Set up sense subsystem for integration, sensitivity, etc.
+        self.integration_time(1,int_time)
+        self.sense_measurements(1, 1, 1, 0)
+        self.sense_range_auto(1, 0, 1)
+        self.sense_range_auto(1, 1, 1)
+        
+        self.integration_time(2,int_time)
+        self.sense_measurements(1, 1, 1, 0)
+        self.sense_range_auto(1, 0, 1)
+        self.sense_range_auto(1, 1, 1)
+
+        self.source_pulse(1, 0)
+        self.sweep_bidirectional(1, 0)
+        self.set_sweep_direction(1, 0)   #sweeps from low to high
+        self.source_sweep(1, 0, 1)
+        self.source_sweep_range(1, 0, bias_start, bias_stop)
+        self.source_sweep_step(1, 0, bias_step)
+
+        #If the smu hits compliance stop the sweep
+        self.output_over_protection(1, compliance_protection)        
+        self.output_over_protection(2, compliance_protection)   
+        
+        #Set arm both channels and set trigger delays to 0
+        npts = abs((bias_stop - bias_start)/bias_step) + 1
+        self.trigger_setup_dc(1, npts)
+        self.trigger_setup_dc(2, npts)
+
+        #Initiate both channels and measure data
+        self.output_enable(1,1)
+        self.output_enable(2,1)
+        dat = self.measurement_all(1,1, timeout)
+        dat = np.reshape(dat,[np.size(dat)/12,12])
+        VIL = np.array( [dat[:,0], dat[:,1], dat[:,7]] ).T #return voltage | current | photocurrent
+        
+        #Disable the sources and collect any errors
+        self.source_value(1,0,0)
+        self.source_value(2,0,0)
+        self.output_enable(1,0)    
+        self.output_enable(2,0)    
+        self.error_all()
+        
+        return VIL
+        
+    def pulsed_internal_LIV(self, bias_start, bias_stop, bias_step,
+                            current_limit, photocurrent_limit, compliance_protection,
+                            int_time, pulse_width, pulse_period, timeout):
+        
+        #set ch 1 to source voltage, ch 2 to only read current w/ 100 mA compliance
+        self.compliance(1, 0, current_limit)
+        self.source_auto_range(1, 0, 0)
+        self.source_range(1,0,10*bias_stop)
+        self.compliance(2, 0, photocurrent_limit)
+        self.source_auto_range(2, 0, 0)
+        self.source_range(2, 0, 2)
+        
+        #Set up sense subsystem for integration, sensitivity, etc.
+        self.integration_time(1,int_time)
+        self.sense_measurements(1, 1, 1, 0)
+        self.sense_range_auto(1, 0, 1)
+        self.sense_range_auto(1, 1, 1)
+        
+        self.integration_time(2,int_time)
+        self.sense_measurements(1, 1, 1, 0)
+        self.sense_range_auto(1, 0, 1)
+        self.sense_range_auto(1, 1, 1)
+
+        # Set up pulsed sweep
+        self.source_pulse(1, 1)         #turn on pulsed measurements
+        self.pulse_delay(1,0)           #set delay to 0
+        self.pulse_width(1,pulse_width)       #set pulse width
+        self.sweep_bidirectional(1, 0)  #single direction sweep
+        self.set_sweep_direction(1, 0)  #sweeps from low to high
+        self.source_sweep(1, 0, 1)      
+        self.source_sweep_range(1, 0, bias_start, bias_stop)
+        self.source_sweep_step(1, 0, bias_step)
+
+        #If the smu hits compliance stop the sweep
+        self.output_over_protection(1, 0)        
+        self.output_over_protection(2, 0)   
+        
+        #Set arm both channels and set trigger delays to (pulse_width - 1.1*int_time)
+        npts = abs((bias_stop - bias_start)/bias_step) + 1
+        self.trigger_setup_pulse(1, npts, pulse_period)
+        self.trigger_setup_pulse(2, npts, pulse_period) 
+
+        #Initiate both channels and measure data
+        self.output_enable(1,1)
+        self.output_enable(2,1)
+        dat = self.measurement_all(1,1, timeout)
+        dat = np.reshape(dat,[np.size(dat)/12,12])
+        VIL = np.array( [dat[:,0], dat[:,1], dat[:,7]] ).T #return voltage | current | photocurrent
+        
+        #Disable the sources and collect any errors
+        self.source_value(1,0,0)
+        self.source_value(2,0,0)
+        self.output_enable(1,0)    
+        self.output_enable(2,0)    
+        self.error_all()
+        
+        return VIL
