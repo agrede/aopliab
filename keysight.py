@@ -273,7 +273,7 @@ class Keysight2900:
         if V0_or_I1 == 0:
             return self.inst.query_ascii_values("SENS%d:VOLT:PROT:TRIP?" % ch)
         if V0_or_I1 == 1:
-            return self.inst.query_ascii_values("SENS%d:CURR:PROT:TRIP?" % ch )
+            return self.inst.query_ascii_values("SENS%d:CURR:PROT:TRIP?" % ch)
 
     '''sense_remote: enables or disables 4/four-wire sensing
     variables...
@@ -529,6 +529,13 @@ class Keysight2900:
         if V0_I1 == 1:
             self.inst.write("SOUR%d:CURR:LEV:IMM:AMPL %e" % (ch, value))
             
+    def set_voltage(self, ch, value):
+        self.inst.write("SOUR%d:VOLT:TRIG %e" % (ch, value))
+        
+    def set_current(self, ch, value):
+        self.inst.write("SOUR%d:CURR:TRIG %e" % (ch, value))
+        
+        
     '''Sets the output range of the specified channel'''
     def source_range(self, ch, V0_I1, value):
         if V0_I1 ==0:
@@ -776,7 +783,18 @@ class Keysight2900:
             #return " ".join(["Sourcing:",self.inst.query_ascii_values("SOUR%d:FUNC:MODE?" % ch,converter = "s")[0].rstrip("\n"),"Compliance Level:",self.inst.query_ascii_values("SENS%d:VOLT:PROT?" % ch,converter = "s")[0].rstrip("\n")])
         
     def measurement_all(self, ch1, ch2, tmax=300):
-        self.inst.write("INIT")
+        #Initialized the selected channels
+        if ch1 and (not ch2):
+            self.inst.write("INIT (@1)")
+        elif (not ch1) and ch2: 
+            self.inst.write("INIT (@1)")
+        elif ch1 and ch2:
+            self.inst.write("INIT (@1,2)")
+        else:
+            print("Select a channel, jackass")
+            return
+          
+        #Check to see if the instrument is busy
         self.inst.write("*OPC?")
         tm = time.time() + tmax
         cycles = 0
@@ -792,7 +810,18 @@ class Keysight2900:
             return None
         
     def measurement_single(self, ch1, ch2, tmax=300):
-        self.inst.write("INIT")
+        #Initialized the selected channels
+        if ch1 and (not ch2):
+            self.inst.write("INIT (@1)")
+        elif (not ch1) and ch2: 
+            self.inst.write("INIT (@1)")
+        elif ch1 and ch2:
+            self.inst.write("INIT (@1,2)")
+        else:
+            print("Select a channel, jackass")
+            return
+          
+        #Check to see if the instrument is busy
         self.inst.write("*OPC?")
         tm = time.time() + tmax
         cycles = 0
@@ -803,12 +832,12 @@ class Keysight2900:
                 opc = self.inst.read() == "1\n"
                 break
         if (opc):
-            return self.fetch_all_data(ch1, ch2)
+            return self.fetch_last_data(ch1, ch2)
         else:
             return None
 
 
-    ''' trigger_setup_dc - sets integration time and triggering for DC spot/sweep measurements'''
+    ''' trigger_setup_dc - sets triggering time and count for DC spot/sweep measurements'''
     def trigger_setup_dc(self, ch, npts):
         self.arm_channel(ch)
         self.arm_counts(ch,1)
@@ -819,7 +848,7 @@ class Keysight2900:
         self.trigger_delay(ch, 0)
         self.trigger_counts(ch,npts)
         
-    ''' trigger_dc - sets integration time and triggering for DC spot/sweep measurements'''
+    ''' trigger_setup_pulse - sets trigger time, delay, and count  for pulsed spot/sweep measurements'''
     def trigger_setup_pulse(self, ch, npts):
         self.arm_channel(ch)
         self.arm_counts(ch,1)
@@ -879,9 +908,3 @@ class Keysight2900:
         
         return VIR
 
-################ TO DO:
-    #Set up SOURCe commands for DC and PULSE
-    #Set up automatic sweeping
-    #Choose some combination of FORMat and READ/FETCh/MEASure commands to pull data
-    #Figure out TRIGger commands to set all source/measure/trigger commands to AUTO (under show trigger tab of
-    #   the CH1 (or CH2) source screens).  Alternately, develop algorithm to set the delay and period.
