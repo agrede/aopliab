@@ -97,8 +97,8 @@ def livmeasure_2900(voltages, current_limit, photo_current_limit, int_time,
     smu.source_sweep(2, 0, 0)
 
     # Enable protection such that if the smu hits compliance, the source will turn off
-    smu.output_over_protection(1, 1)        
-    smu.output_over_protection(1, 1)    
+#    smu.output_over_protection(1, 1)        
+#    smu.output_over_protection(1, 1)    
     
     # Arm both channels and set trigger delays to 0; one trigger per measurement
     smu.trigger_setup_dc(1, 1)
@@ -124,7 +124,14 @@ def livmeasure_2900(voltages, current_limit, photo_current_limit, int_time,
         meas_phot.append(meas[7])
         
         # If the SMU hits compliance, exit the loop
-        v=max(voltages) if (smu.at_compliance(1,1) or smu.at_compliance(2,1)) else v
+        tbool = (smu.at_compliance(1,1) or smu.at_compliance(2,1))
+        if tbool:
+            print(tbool)
+            print(smu.at_compliance(1,1))
+            print(smu.at_compliance(2,1))
+            break
+        else:
+            continue
 
     #Disable the sources, get errors, and close connection
     smu.source_value(1,0,0)

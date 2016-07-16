@@ -10,7 +10,7 @@ rm = visa.ResourceManager()
 instr = rm.open_resource(addr)
 smu = Keysight2900(instr)
 
-bias_start = 0.0;   bias_stop = 10.0;   bias_step = 0.1;
+bias_start = 0.0;   bias_stop = 10.0;   bias_step = 1;
 voltages = np.arange(bias_start, bias_stop + bias_step, bias_step)
 current_limit = 1E-2
 photo_current_limit = 0.1
