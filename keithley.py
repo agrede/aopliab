@@ -112,6 +112,17 @@ class K2400():
         else:
             self._volt_limit = value
         self.inst.write("VOLT:PROT %f" % self._volt_limit)
+        
+    @property
+    def front_terminal(self):
+        pass
+    
+    @front_terminal.setter
+    def front_terminal(self, value):
+        if value:
+            x = 1
+        else:
+            x = 2
 
 
 class K2485:

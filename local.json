@@ -34,7 +34,7 @@
     "SMU": {
         "manufacturer": "Keithely",
         "model": "K2400",
-        "addr": "GPIB0::24::INSTR"
+        "addr": "GPIB0::30::INSTR"
     },
     "SPA": {
         "manufacturer": "HP",
