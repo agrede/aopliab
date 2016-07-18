@@ -966,7 +966,7 @@ class Keysight2900:
         return VIL
         
     def pulsed_internal_LIV(self, bias_start, bias_stop, bias_step,
-                            current_limit, photocurrent_limit, compliance_protection,
+                            current_limit, photocurrent_limit,
                             int_time, pulse_width, pulse_period, timeout):
         
         #set ch 1 to source voltage, ch 2 to only read current w/ 100 mA compliance
