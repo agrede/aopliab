@@ -22,7 +22,7 @@ def ivs(smu, vs, climit):
     smu.outut = True
     for k, v in enumerate(vs):
         smu.set_voltage(v)
-        ms[k, :] = smu.measurement[:2]
+        ms[k, :] = smu.measurement()[:2]
     smu.output = False
     return ms
     
@@ -32,7 +32,7 @@ def suns(smu, climit):
     smu.set_voltage(0.)
     smu.current_limit = climit
     smu.output = True
-    ms = smu.measurement[:2]
+    ms = smu.measurement()[:2]
     smu.output = False
     return ms
     
@@ -42,7 +42,9 @@ def align(smu, climit):
     smu.set_voltage(0.)
     smu.current_limit = climit
     smu.output = True
+    smu.inst.write("INIT")
     input("Press Enter for next measurement...")
+    smu.inst.write("ABOR")
     smu.output = False
     
 pth = "./dta/outdoor%d.npz"

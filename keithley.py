@@ -115,14 +115,15 @@ class K2400():
         
     @property
     def front_terminal(self):
-        pass
+        tst = self.inst.query("ROUT:TERM?")
+        return (tst == "FRON\n")
     
     @front_terminal.setter
     def front_terminal(self, value):
         if value:
-            x = 1
+            self.inst.write("ROUT:TERM FRON")
         else:
-            x = 2
+            self.inst.write("ROUT:TERM REAR")
 
 
 class K2485:
