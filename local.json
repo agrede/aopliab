@@ -72,6 +72,18 @@
             "read_termination": ["<CR>", "> "]
         }
     },
+    "ARD": {
+        "manufacturer": "Arduino",
+        "model": "UNO",
+        "addr": "ASRL5::INSTR",
+        "conn_params": {
+            "baud_rate": 9600,
+            "data_bits": 8,
+            "stop_bits": 1,
+            "write_termination": ["<LF>"],
+            "read_termination": ["<LF>"]
+        }
+    },
     "FilterWheel": {
         "manufacturer": "ThorLabs",
         "model": "Manual6",
