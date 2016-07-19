@@ -12,10 +12,21 @@ from keithley import K2400
 import time
 
 rm = visa.ResourceManager()
+smui = ac.getInstr(rm, "SMU")
+pyri = ac.getInstr(rm, "LasPow")
+smu = K2400(smui)
+pyr = K2400(pyri)
+ard = ac.getInstr(rm, "ARD")
+vs = np.arange(-1., 1.01, 0.01)
+climit = 40e-3
+pth = "./dta/outdoor%d.npz"
 
-def ivs(smu, vs, climit):
+dta = []
+k = 0
+
+def ivs(smu, vs, climit, port):
     smu.output = False
-    smu.front_terminal = True
+    smu.front_terminal = port
     smu.set_voltage(vs[0])
     smu.current_limit = climit
     ms = np.zeros((vs.size, 2))
@@ -28,7 +39,7 @@ def ivs(smu, vs, climit):
     
 def suns(smu, climit):
     smu.output = False
-    smu.font_terminal = False
+    smu.font_terminal = True
     smu.set_voltage(0.)
     smu.current_limit = climit
     smu.output = True
@@ -36,29 +47,24 @@ def suns(smu, climit):
     smu.output = False
     return ms
     
-def align(smu, climit):
+def align(smu, climit, ard):
     smu.output = False
     smu.font_terminal = True
     smu.set_voltage(0.)
     smu.current_limit = climit
     smu.output = True
-    smu.inst.write("INIT")
+    ard.write("start")
+    time.sleep(10.)
     input("Press Enter for next measurement...")
-    smu.inst.write("ABOR")
+    ard.write("stop")
     smu.output = False
     
-pth = "./dta/outdoor%d.npz"
-rm = visa.ResourceManager()
-smui = ac.getInstr(rm, "SMU")
-smu = K2400(smui)
-vs = np.arange(-1., 1.01, 0.01)
-climit = 40e-3
-dta = []
-k = 0
+
 while(True):
     align(smu, climit)
-    a = ivs(smu, vs, climit)
-    b = suns(smu, climit)
+    a = ivs(smu, vs, climit, True)
+    b = ivs(smu, vs, climit, False)
+    c = suns(pyr, climit)
     tme = time.localtime()
-    dta.append((tme, a, b))
+    dta.append((tme, a, b, c))
     np.savez_compressed(pth % k, dta)
