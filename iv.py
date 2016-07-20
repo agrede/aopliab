@@ -177,9 +177,9 @@ def pulsed_livmeasure_2900(voltages,
     smu.sense_range_auto(1, 1, 1)
     
     smu.integration_time(2,int_time)
-    smu.sense_measurements(1, 1, 1, 0)
-    smu.sense_range_auto(1, 0, 1)
-    smu.sense_range_auto(1, 1, 1)
+    smu.sense_measurements(2, 1, 1, 0)
+    smu.sense_range_auto(2, 0, 1)
+    smu.sense_range_auto(2, 1, 1)
 
     # Set up pulsed sweep
     smu.source_pulse(1, 1)          #turn on pulsed measurements

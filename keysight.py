@@ -979,14 +979,17 @@ class Keysight2900:
         
         #Set up sense subsystem for integration, sensitivity, etc.
         self.integration_time(1,int_time)
-        self.sense_measurements(1, 1, 1, 0)
-        self.sense_range_auto(1, 0, 1)
-        self.sense_range_auto(1, 1, 1)
-        
         self.integration_time(2,int_time)
-        self.sense_measurements(1, 1, 1, 0)
+        self.sense_measurements(1, 1, 1, 0)  
+        self.sense_measurements(2, 1, 1, 0)             
+
         self.sense_range_auto(1, 0, 1)
         self.sense_range_auto(1, 1, 1)
+        self.sense_range_auto(2, 0, 1)
+        self.sense_range_auto(2, 1, 1)
+
+
+
 
         # Set up pulsed sweep
         self.source_pulse(1, 1)         #turn on pulsed measurements
