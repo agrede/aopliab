@@ -1,6 +1,7 @@
 import visa
 from keithley import K2400, K2485
 from keysight import Keysight2900
+import numpy as np
 
 
 def ivmeasure(voltages, current_limit, address):
@@ -86,9 +87,11 @@ def livmeasure_2900(voltages, current_limit, photo_current_limit, int_time,
     smu.integration_time(1,int_time)
     smu.sense_measurements(1, 1, 1, 0)
     smu.sense_range_auto(1, 0, 1);  smu.sense_range_auto(1, 1, 1);
+    smu.sense_range_auto_llim(1, 1, "MIN")
     smu.integration_time(2,int_time)
     smu.sense_measurements(2, 1, 1, 0)
     smu.sense_range_auto(2, 0, 1);  smu.sense_range_auto(2, 1, 1);
+    smu.sense_range_auto_llim(2, 1, "MIN")
 
     # Disable pulsing and any sweeps
     smu.source_pulse(1, 0)
@@ -146,7 +149,6 @@ def livmeasure_2900(voltages, current_limit, photo_current_limit, int_time,
 
     return (meas_volt, meas_curr, meas_phot)
     
-
 def pulsed_livmeasure_2900(voltages,
                             current_limit, photocurrent_limit,
                             int_time, pulse_width, pulse_period, 
@@ -175,11 +177,13 @@ def pulsed_livmeasure_2900(voltages,
     smu.sense_measurements(1, 1, 1, 0)
     smu.sense_range_auto(1, 0, 1)
     smu.sense_range_auto(1, 1, 1)
+    smu.sense_range_auto_llim(1, 1, "MIN")
     
     smu.integration_time(2,int_time)
     smu.sense_measurements(2, 1, 1, 0)
     smu.sense_range_auto(2, 0, 1)
     smu.sense_range_auto(2, 1, 1)
+    smu.sense_range_auto_llim(2, 1, "MIN")
 
     # Set up pulsed sweep
     smu.source_pulse(1, 1)          #turn on pulsed measurements
@@ -221,4 +225,95 @@ def pulsed_livmeasure_2900(voltages,
     smu.error_all()     
     inst.close()
     
-    return (meas_volt, meas_curr, meas_phot)
+    # Format data for output
+    liv = (meas_volt, meas_curr, meas_phot)
+    liv = np.asarray(liv).T
+    
+    return liv   
+    
+    #LIV where the light channel is passed through a transamp; might be switched at a later point
+#to dynamically adjust the transamp gain
+def pulsed_livmeasure_2900_transamp(voltages,
+                            current_limit, transamp_gain,
+                            int_time, pulse_width, pulse_period, 
+                            timeout, address):
+    
+    # Initialized measurement arrays
+    meas_volt = []  # List of measured voltages from source 1/device
+    meas_curr = []  # List of measured currents from source 1/device
+    meas_phot = []  # List of measured currents from source 2/photodiode
+     
+    # Connect to instruments and initialize
+    rm = visa.ResourceManager()
+    inst = rm.open_resource(address)
+    smu = Keysight2900(inst)
+    
+    #set ch 1 to source voltage, ch 2 to only read current w/ 100 mA compliance
+    smu.compliance(1, 0, current_limit)
+    smu.source_auto_range(1, 0, 0)
+    smu.source_range(1,0,10*max(voltages))
+    smu.compliance(2, 1, 10)                 # Set voltage compliance to 1V to save the transamp
+    smu.source_auto_range(2, 0, 0)
+    smu.source_range(2, 0, 2)
+    
+    # Set up sense subsystem for integration, measure I/V/L, autosensitivity
+    smu.integration_time(1,int_time)
+    smu.sense_measurements(1, 1, 1, 0)
+    smu.sense_range_auto(1, 0, 1)
+    smu.sense_range_auto(1, 1, 1)
+    smu.sense_range_auto_llim(1, 1, "MIN")
+    
+    smu.integration_time(2,int_time)
+    smu.sense_measurements(2, 1, 1, 0)
+    smu.sense_range_auto(2, 0, 1)
+    smu.sense_range_auto(2, 1, 1)
+    smu.sense_range_auto_llim(2, 1, "MIN")
+
+    # Set up pulsed sweep
+    smu.source_pulse(1, 1)          #turn on pulsed measurements
+    smu.pulse_delay(1,0)            #set delay to 0
+    smu.pulse_width(1,pulse_width)  #set pulse width
+    smu.source_sweep(1, 0, 0)       #disable sweeping 
+
+    #Disable overprotection for pulsed measurements to avoid the SMU shutting off when charging cables
+    smu.output_over_protection(1, 0)        
+    smu.output_over_protection(2, 0)   
+    
+    # Arm both channels, trigger 1 measurement, and set trigger delays to (pulse_width - 1.1*int_time)
+    smu.trigger_setup_pulse(1, 1, pulse_period)
+    smu.trigger_setup_pulse(2, 1, pulse_period) 
+
+    #Initiate both channels and measure data
+    smu.set_voltage(1,voltages[0])
+    smu.output_enable(1,1)
+    smu.set_voltage(2,0)
+    smu.output_enable(2,1)
+    
+    # Sweep voltages
+    for v in voltages:
+        smu.set_voltage(1,v)
+        
+        # Trigger and read measurements
+        meas = smu.measurement_single(1,1)
+
+        # Save measurments
+        meas_volt.append(meas[0])
+        meas_curr.append(meas[1])
+        meas_phot.append(meas[6])
+    
+    #Disable the sources, get errors, and close connection
+    smu.source_value(1,0,0)
+    smu.output_enable(1,0)  
+    smu.source_value(2,0,0)
+    smu.output_enable(2,0)   
+    smu.error_all()     
+    inst.close()
+    
+    # Format data into [Voltage, Device Current, Photocurrent]
+    liv = (meas_volt, meas_curr, meas_phot)
+    liv = np.asarray(liv).T
+    l = liv[:,2]*transamp_gain
+    liv[:,2] = l
+    
+    return liv
+    

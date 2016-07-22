@@ -75,7 +75,7 @@
     "ARD": {
         "manufacturer": "Arduino",
         "model": "UNO",
-        "addr": "ASRL5::INSTR",
+        "addr": "ASRL6::INSTR",
         "conn_params": {
             "baud_rate": 9600,
             "data_bits": 8,

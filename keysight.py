@@ -853,7 +853,8 @@ class Keysight2900:
         self.trigger_delay(ch, 0)
         self.trigger_counts(ch,npts)
         
-    ''' trigger_setup_pulse - sets trigger time, delay, and count  for pulsed spot/sweep measurements'''
+    ''' trigger_setup_pulse - sets trigger time, delay, and count  for pulsed spot/sweep measurements
+    ***IMPORTANT*** This assumes that ch2 is set at DC and only ch 1 is being pulsed'''
     def trigger_setup_pulse(self, ch, npts, period):
         self.arm_channel(ch)
         self.arm_counts(ch,1)
@@ -861,7 +862,7 @@ class Keysight2900:
         self.arm_delay(ch, 0)
         
         #Make sure that the measurement delay is > 0, and then set it to be towards the end of the pulse
-        meas_delay = float(self.inst.query("SOUR%d:PULS:WIDT?" % ch)) - float(self.inst.query("SENS%d:VOLT:DC:APER?" % ch))*1.1
+        meas_delay = float(self.inst.query("SOUR1:PULS:WIDT?")) - float(self.inst.query("SENS%d:VOLT:DC:APER?" % ch))*1.1
         meas_delay = 0 if (meas_delay < 0) else meas_delay
         
         
@@ -882,7 +883,9 @@ class Keysight2900:
         self.sense_measurements(1, 1, 1, 1)
         self.sense_range_auto(1, 0, 1)
         self.sense_range_auto(1, 1, 1)
+        self.sense_range_auto_llim(1, 1, "MIN")
         self.sense_range_auto(1, 2, 1)
+        
 
         
         self.source_pulse(1, 0)
@@ -927,11 +930,13 @@ class Keysight2900:
         self.sense_measurements(1, 1, 1, 0)
         self.sense_range_auto(1, 0, 1)
         self.sense_range_auto(1, 1, 1)
+        self.sense_range_auto_llim(1, 1, "MIN")
         
         self.integration_time(2,int_time)
         self.sense_measurements(1, 1, 1, 0)
         self.sense_range_auto(1, 0, 1)
         self.sense_range_auto(1, 1, 1)
+        self.sense_range_auto_llim(2, 1, "MIN")
 
         self.source_pulse(1, 0)
         self.sweep_bidirectional(1, 0)
@@ -981,12 +986,16 @@ class Keysight2900:
         self.integration_time(1,int_time)
         self.integration_time(2,int_time)
         self.sense_measurements(1, 1, 1, 0)  
-        self.sense_measurements(2, 1, 1, 0)             
+        self.sense_measurements(2, 1, 1, 0)  
+           
 
         self.sense_range_auto(1, 0, 1)
         self.sense_range_auto(1, 1, 1)
+        self.sense_range_auto_llim(1, 1, "MIN")
+        
         self.sense_range_auto(2, 0, 1)
         self.sense_range_auto(2, 1, 1)
+        self.sense_range_auto_llim(2, 1, "MIN")
 
 
 

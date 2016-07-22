@@ -60,11 +60,11 @@ while(cont):
         break
     a = ivs(smu, start, stop, points, climit, True)
     b = ivs(smu, start, stop, points, climit, False)
-    # c = suns(smu, climit)
+    c = suns(ard)
     tme = time.localtime()
     x = tme.tm_hour+tme.tm_min/60.+tme.tm_sec/3600.
     y = (-a[:, 0]*a[:, 1]).max()/(-b[:, 0]*b[:, 1]).max()
     p.update(x, y)
-    dta.append((tme, a, b))
+    dta.append((tme, a, b, c))
     np.savez_compressed(pth % k, dta)
     k = k+1
