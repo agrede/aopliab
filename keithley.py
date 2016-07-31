@@ -14,35 +14,26 @@ class K2400():
     volt_limits = [-21.0, 21.0]
     speed_limits = [0.01, 10.0]
     delay_limits = [0.0, 999.999]
-    _output = False
-    _curr_limit = 0
-    _volt_limit = 0
-    _source_volt = True
 
     def __init__(self, inst):
         self.inst = inst
-        self.inst.write("*RST; *CLS")
         self.curr_limits[0] = inst.query_ascii_values("CURR:PROT:LEV? MIN")[0]
         self.curr_limits[1] = inst.query_ascii_values("CURR:PROT:LEV? MAX")[0]
         self.volt_limits[0] = inst.query_ascii_values("VOLT:PROT:LEV? MIN")[0]
         self.volt_limits[1] = inst.query_ascii_values("VOLT:PROT:LEV? MAX")[0]
-        self.current_limit = None
-        self.voltage_limit = None
         self.inst.write("FUNC:CONC ON")
         self.inst.write("FUNC 'VOLT', 'CURR'")
         self.inst.write("SOUR:FUNC VOLT")
 
     @property
     def output(self):
-        return self._output
+        return (self.inst.query_ascii_values("OUTP?")[0] == 0.)
 
     @output.setter
     def output(self, value):
         if (value):
-            self._output = True
             self.inst.write("OUTP ON")
         else:
-            self._output = False
             self.inst.write("OUTP OFF")
 
     def trigger(self):
@@ -52,66 +43,114 @@ class K2400():
     def read(self):
         return self.inst.query_ascii_values("DATA?")
 
-    def set_voltage(self, value):
-        if (not self._source_volt):
+    @property
+    def source_volt(self):
+        return (self.inst.query("SOUR:FUNC?") == "VOLT\n")
+
+    @source_volt.setter
+    def source_volt(self, value):
+        if value:
             self.inst.write("SOUR:FUNC VOLT")
-            self._source_volt = True
-        if (
-                value is not None and
-                self.volt_limits[0] < value and
-                self.volt_limits[1] > value
-        ):
+        else:
+            self.inst.write("SOUR:FUNC CURR")
+
+    @property
+    def voltage(self):
+        return self.inst.query_ascii_values("SOUR:VOLT?")[0]
+
+    @voltage.setter
+    def voltage(self, value):
+        if within_limits(value, self.volt_limits):
             self.inst.write("SOUR:VOLT %f" % value)
 
-    def set_current(self, value):
-        if (self._source_volt):
-            self.inst.write("SOUR:FUNC CURR")
-            self._source_volt = False
-        if (
-                value is not None or
-                self.curr_limits[0] < value or
-                self.curr_limits[1] > value
-        ):
-            self.inst.write("SOUR:CURR %f" % value)
-        else:
-            print("DUMBASS")
+    @property
+    def current(self):
+        return self.inst.query_ascii_values("SOUR:CURR?")[0]
 
-    def measurement(self):
+    @current.setter
+    def current(self, value):
+        if within_limits(value, self.curr_limits):
+            self.inst.write("SOUR:CURR %f" % value)
+
+    @property
+    def measure(self):
         return self.inst.query_ascii_values("READ?")
 
     @property
     def current_limit(self):
-        return self._curr_limit
+        return self.inst.query_ascii_values("CURR:PROT:LEV?")[0]
 
     @current_limit.setter
     def current_limit(self, value):
-        if (
-                value is None or
-                self.curr_limits[0] > value or
-                self.curr_limits[1] < value
-        ):
-            self._curr_limit = self.inst.query_ascii_values(
-                "CURR:PROT:LEV? DEF")[0]
+        if within_limits(value, self.curr_limits):
+            self.inst.write("CURR:PROT:LEV %f" % value)
         else:
-            self._curr_limit = value
-        self.inst.write("CURR:PROT %f" % self._curr_limit)
+            self.inst.write("CURR:PROT:LEV %f" %
+                            self.inst.query_ascii_values(
+                                                         "CURR:PROT:LEV? DEF"
+                                                         )[0])
 
     @property
     def voltage_limit(self):
-        return self._volt_limit
+        return self.inst.query_ascii_values("VOLT:PROT:LEV?")[0]
 
     @voltage_limit.setter
     def voltage_limit(self, value):
-        if (
-                value is None or
-                self.volt_limits[0] > value or
-                self.volt_limits[1] < value
-        ):
-            self._volt_limit = self.inst.query_ascii_values(
-                "VOLT:PROT:LEV? DEF")[0]
+        if within_limits(value, self.curr_limits):
+            self.inst.write("VOLT:PROT:LEV %f" % value)
         else:
-            self._volt_limit = value
-        self.inst.write("VOLT:PROT %f" % self._volt_limit)
+            self.inst.write("VOLT:PROT:LEV %f" %
+                            self.inst.query_ascii_values(
+                                                         "VOLT:PROT:LEV? DEF"
+                                                         )[0])
+
+    @property
+    def front_terminal(self):
+        tst = self.inst.query("ROUT:TERM?")
+        return (tst == "FRON\n")
+
+    @front_terminal.setter
+    def front_terminal(self, value):
+        if value:
+            self.inst.write("ROUT:TERM FRON")
+        else:
+            self.inst.write("ROUT:TERM REAR")
+
+    def voltage_sweep(self, start, stop, points, tmeout=300.):
+        if points < 1:
+            points = 1
+        elif points > 2500:
+            points = 2500
+        lmts = self.volt_limits
+        if within_limits(start, lmts) and within_limits(stop, lmts):
+            self.inst.write("SOUR:VOLT:MODE SWE")
+            self.inst.write("SOUR:VOLT:STAR %f" % start)
+            self.inst.write("SOUR:VOLT:STOP %f" % stop)
+            self.inst.write("SOUR:SWE:POIN %d" % points)
+            self.inst.write("SOUR:SWE:CAB EARL")
+            self.inst.write("TRIG:COUN %d" % points)
+            self.output = True
+            self.inst.write("INIT")
+            self.inst.write("*OPC?")
+            tm = time.time() + tmeout
+            cycles = 0
+            opc = False
+            while (not opc and time.time() < tm):
+                cycles = cycles+1
+                if (self.inst.stb > 0):
+                    opc = self.inst.read() == "1\n"
+                    break
+            self.output = False
+            rtn = (0, None)
+            if opc:
+                rtn = (self.inst.query_ascii_values("TRAC:POIN:ACT?")[0],
+                       self.inst.query_ascii_values("FETCH?"))
+            self.inst.write("TRIG:COUN 1")
+            self.inst.write("SOUR:VOLT:MODE FIX")
+            return rtn
+
+    def clear_errors(self):
+        self.inst.write("STAT:QUE:CLE")
 
 
 class K2485:
