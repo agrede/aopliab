@@ -15,10 +15,10 @@ start = -0.2
 stop = 3.5
 points = 351
 climit = 50e-3
-pth = "./dta/outdoor%d.npz"
+pth = "./dta/dark%d.npz"
 
 dta = []
-k = 30
+k = 0
 
 
 def ivs(smu, start, stop, points, climit, port):
