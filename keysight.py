@@ -15,7 +15,7 @@ class InfiniiVision5000():
 
     def __init__(self, inst):
         self.inst = inst
-        self.inst.write("*RST; *CLS")
+#        self.inst.write("*RST; *CLS")
         cfg = json_load('configs/keysight.json')
         self.config = cfg['InfiniiVision5000']
 
@@ -67,7 +67,7 @@ class InfiniiVision5000():
 
     @property
     def points(self):
-        return int(self.query_ascii_values("WAV:POIN?")[0])
+        return self.inst.query_ascii_values("WAV:POIN?")[0]
 
     @points.setter
     def points(self, value):
@@ -85,18 +85,23 @@ class InfiniiVision5000():
         else:
             v = 10**M
         self.inst.write("WAV:POIN %d" % v)
-
-    @property
-    def voltages(self):
+        
+    def voltages(self, ch):
         pre = self.preamble
-        self.inst.write("DIG 1")
-        typ = 'b'
-        if (pre[0] == 4):
-            return self.inst.query_ascii_values("WAV:DATA?")
-        elif (pre[0] == 1):
-            typ = 'h'
-        wav = self.inst.query_binary_values("WAV:DATA?", datatype=typ)
-        return (np.array(wav)-pre[9])*pre[7]+pre[8]
+        self.inst.write("WAV:FORM ASC")  #Set the instrument to read out ascii values because fuck if I can understand wth it's doing with binary
+        self.inst.write("WAV:SOUR CHAN%d" % ch)        
+        return np.array(self.inst.query_ascii_values("WAV:DATA?", converter = 's')[1:int(pre[2])])
+
+#        typ = 'b'
+#        if (pre[0] == 4):
+##            return self.inst.query_ascii_values("WAV:DATA?")
+#            return np.array(self.inst.query_ascii_values("WAV:DATA?", converter = 's')[1:int(pre[2])])
+#        elif (pre[0] == 1):
+#            typ = 'h'
+#        wav = self.inst.query_binary_values("WAV:DATA?", datatype=typ)
+##        return (np.array(wav)-pre[9])*pre[7]+pre[8]
+##        return (np.array(wav)-pre[8])*pre[7]/2 + pre[9]*pre[7]
+#        return np.array(wav)
 
     @property
     def times(self):
