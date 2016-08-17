@@ -108,6 +108,18 @@ class InfiniiVision5000():
         pre = self.preamble
         return (np.arange(pre[2])-pre[6])*pre[4]+pre[5]
 
+    #Single trigger; the scope freezes without this
+    def trig_single(self):
+        self.inst.write("SING")
+        
+    def trig_run(self):
+        self.inst.write("RUN")
+    
+    def trig_stop(self):
+        self.inst.write("STOP")
+                          
+        
+        
     @property
     def preamble(self):
         return self.inst.query_ascii_values("WAV:PRE?")
