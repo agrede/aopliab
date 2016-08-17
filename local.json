@@ -108,5 +108,14 @@
         "manufacturer": "Keysight",
         "model": "B2912A",
         "addr": "USB0::0x0957::0x8E18::MY51141103::0::INSTR"
+    },
+    "JeffARD": {
+        "port": "COM5",
+        "baud_rate": 9600,
+        "data_bits": 8,
+        "stop_bits": 1,
+        "write_termination": ["<LF>"],
+        "read_termination": ["<CR>", "<LF>"],
+        "timeout": 10
     }
 }

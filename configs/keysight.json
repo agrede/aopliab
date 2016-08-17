@@ -1,13 +1,8 @@
 {
     "InfiniiVision5000": {
+        "addr": "USB0::0x0957::0x1765::MY48200170::INSTR",
         "acqtypes": ["NORM", "AVER", "HRES", "PEAK"],
         "formats": ["WORD", "BYTE", "ASC"],
         "points_modes": ["NORM", "MAX", "RAW"]
-    }
-    
-    "Keysight2900": {
-        "Integration_settings": [0.0, 60]    
-                     
-                     
     }
 }
