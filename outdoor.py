@@ -21,7 +21,7 @@ pth = "./dta/20160913%d.npz"
 
 ard.write("setcpv 1")
 dta = []
-k = 0
+k = 2
 
 
 def ivs(smu, start, stop, points, climit, port):
@@ -34,40 +34,14 @@ def ivs(smu, start, stop, points, climit, port):
     smu.output = False
     return np.reshape(tmp[1], (-1, 5))[:, :2]
 
-
-<<<<<<< HEAD
-def suns(ard):
-    tmp0 = int(ard.query_ascii_values("measdni")[0])
-    tmp1 = int(ard.query_ascii_values("measpyr")[0])
-    return np.array([tmp0, tmp1])
-
-
-
-def align(smu, climit, ard):
-=======
+    
 def iscvoc(smu, vlimit, climit, port):
->>>>>>> origin/Jared
     smu.output = False
     smu.front_terminal = port
     smu.source_volt = True
     smu.current_limit = climit
     smu.voltage = 0.
-    smu.output = True
-<<<<<<< HEAD
-    ard.write("startcpv")
-    time.sleep(120.)
-#    while True:
-#        user_input = input('Continue (y/n): ')
-#        if user_input in ['y', 'n']:
-#            break
-    time.sleep(10.)
-    ard.write("stopcpv")
-    # input("Press Enter When Stopped...")
-    smu.output = False
-    return (True)
-=======
     isc = smu.measure[1]
-    smu.output = False
     smu.source_volt = False
     smu.voltage_limit = vlimit
     smu.current = 0.
@@ -90,7 +64,6 @@ def align(ard):
     ard.write("cpvtia")  # actually switches to SMU
     # input("Press Enter When Stopped...")
     return True
->>>>>>> origin/Jared
 
 
 p0 = ac.DynamicPlot(ptype="semilogy")
@@ -102,8 +75,8 @@ while(cont):
     cont = align(ard)
     if not cont:
         break
-    am = iscvoc(smu, vlimit, climit, True)
-    bm = iscvoc(smu, vlimit, climit, False)
+    #am = iscvoc(smu, vlimit, climit, True)
+    #bm = iscvoc(smu, vlimit, climit, False)
     a = ivs(smu, start, stop, points, climit, True)
     b = ivs(smu, start, stop, points, climit, False)
     c = suns(ard)
@@ -114,6 +87,6 @@ while(cont):
     pwr = Area*(c*1.02279738e-07+3.43531676e-07)*calconst
     y2 = (-a[:, 0]*a[:, 1]).max()/pwr
     p1.update(x, y2)
-    dta.append((tme, a, b, c, am, bm))
+    dta.append((tme, a, b, c))
     np.savez_compressed(pth % k, dta)
     k = k+1
