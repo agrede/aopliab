@@ -7,11 +7,8 @@ from keysight import InfiniiVision5000
 from keysight import InfiniiVision5000Channel
 import time
 
-
-
-
 ## Set up file name and outputs
-fpath = 'C:/Users/jspri/Dropbox/Jared/Data/2016_8-17 - LED Retake w Pulse Generator/New LED385L/Raw Scope Data/'
+fpath = 'C:/Users/jspri/Dropbox/Jared/Data/2016_8-29 - Perovskite Testing/Raw Transients/S7/'
 
 ##Initialize resource manager and open the scope
 #rm = visa.ResourceManager()
@@ -31,9 +28,9 @@ msg = b'single'
 
 # Set up local arduino variables
 steps_per_trig = b'1'                               #number of steps per each call of "single" [# steps]
-max_steps = 270                                     #number of stepper steps to take; 270 is ~ full range
+max_steps = 295                                     #number of stepper steps to take; 270 is ~ full range
 trigs = np.arange(0,max_steps,int(steps_per_trig))
-off_time = b'10'                                    #time between pulses in [ms]
+off_time = b'1000'                                    #time between pulses in [ms]
 avgs = b'8'                                         #number of pulses to send per each call of "average"
 ard.write(b'set_steps');    time.sleep(2);  ard.write(steps_per_trig);  print(''.join(["Steps per trigger: ", ard.readline().decode('utf-8') ]));
 ard.write(b'set_dwell');    time.sleep(2);  ard.write(off_time);        print(''.join(["Delay between pulses (ms): ", ard.readline().decode('utf-8') ]));
@@ -49,7 +46,7 @@ r_s = 10.01 #10 ohm series resistance
 #for count in repeats:
 count = 8
 print("Repeat %d" %count)
-fname = 'LED385L_Run%2d - Voltage Range 15-50V - Pulse ' % count
+fname = 'S01-D07-Run%2d - Pulsed 15-50V' % count
 
 osc.trig_single()
 ard.write(b'first_single'); ard.readline()

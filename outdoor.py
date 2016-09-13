@@ -6,7 +6,7 @@ import time
 import matplotlib.pyplot as plt
 
 rm = visa.ResourceManager()
-smui = ac.getInstr(rm, "LasPow")
+smui = ac.getInstr(rm, "SMU")
 # pyri = ac.getInstr(rm, "LasPow")
 smu = K2400(smui)
 # pyr = K2400(pyri)
@@ -32,7 +32,10 @@ def ivs(smu, start, stop, points, climit, port):
 
 
 def suns(ard):
-    return ard.query_ascii_values("meas")[0]
+    tmp0 = int(ard.query_ascii_values("measdni")[0])
+    tmp1 = int(ard.query_ascii_values("measpyr")[0])
+    return np.array([tmp0, tmp1])
+
 
 
 def align(smu, climit, ard):
@@ -41,15 +44,17 @@ def align(smu, climit, ard):
     smu.voltage = 0.
     smu.current_limit = climit
     smu.output = True
-    # ard.write("start")
-    while True:
-        user_input = input('Continue (y/n): ')
-        if user_input in ['y', 'n']:
-            break
-    # ard.write("stop")
+    ard.write("startcpv")
+    time.sleep(120.)
+#    while True:
+#        user_input = input('Continue (y/n): ')
+#        if user_input in ['y', 'n']:
+#            break
+    time.sleep(10.)
+    ard.write("stopcpv")
     # input("Press Enter When Stopped...")
     smu.output = False
-    return (user_input == 'y')
+    return (True)
 
 
 p = ac.DynamicPlot(ptype="semilogy")

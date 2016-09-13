@@ -1,9 +1,7 @@
 import numpy as np
 import matplotlib.pylab as plt
-import aopliab_common as ac
 import visa
 from keysight import Keysight2900
-import iv
 import time
 
 #Initialize resource manager and open the SMU
@@ -12,10 +10,14 @@ rm = visa.ResourceManager()
 instr = rm.open_resource(addr)
 smu = Keysight2900(instr)
 
-# Device identification
+l = 25
+w = 2
+A = l*w/100 #area in cm^2
+#A = 0.1 #
+Jmax = 30 #mA/cm^2
 
-dc_bias_start = -2;   dc_bias_stop = 7;   dc_bias_step = .005;
-current_limit = .01
+dc_bias_start = -2;   dc_bias_stop = 10;   dc_bias_step = .01;
+current_limit = Jmax * A / 1000
 integ_time = 3/60
 
 pulse_bias_start = 2.5;   pulse_bias_stop = 8.5;   pulse_bias_step = .005;
@@ -30,10 +32,10 @@ compliance_protection = True
 timeout = 3000
 
 
-fpath = 'C:/Users/jspri/Dropbox/Jared/Data/2016_8-17 - LED Retake w Pulse Generator/Perovskite/DC/'
+fpath = 'C:/Users/jspri/Dropbox/Jared/Data/2016_9-10 - Large OLEDs/9-11/'
 
 count = 1  #LIV run number
-dcreps = np.arange(0,30,1)
+dcreps = np.arange(0,3,1)
 preps = np.arange(0,10,1)
 
 #print("Pulsed")
@@ -56,7 +58,7 @@ for k in dcreps:
     print("Run %d" %k)
     liv = smu.dc_internal_LIV(dc_bias_start, dc_bias_stop, dc_bias_step, current_limit, 
                                photocurrent_limit, compliance_protection, integ_time, timeout)
-    fname = ('S01_D05_Run%2d - HiRes DC Sweep - pre pulse.txt' %count)
+    fname = ('S01-D01-Run%2d - DC - AR1 - 2mm - set 2.txt' %count)
     np.savetxt(''.join([fpath,fname]),liv)
     plt.semilogy(liv[:,0],liv[:,1])
     count+=1

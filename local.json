@@ -34,7 +34,7 @@
     "SMU": {
         "manufacturer": "Keithely",
         "model": "K2400",
-        "addr": "GPIB0::30::INSTR"
+        "addr": "GPIB0::23::INSTR"
     },
     "SPA": {
         "manufacturer": "HP",
@@ -75,7 +75,7 @@
     "ARD": {
         "manufacturer": "Arduino",
         "model": "UNO",
-        "addr": "ASRL15::INSTR",
+        "addr": "ASRL9::INSTR",
         "conn_params": {
             "baud_rate": 9600,
             "data_bits": 8,
@@ -110,7 +110,7 @@
         "addr": "USB0::0x0957::0x8E18::MY51141103::0::INSTR"
     },
     "JeffARD": {
-        "port": "COM5",
+        "port": "COM8",
         "baud_rate": 9600,
         "data_bits": 8,
         "stop_bits": 1,

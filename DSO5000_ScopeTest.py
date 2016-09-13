@@ -38,8 +38,8 @@ dat[:,2] = dat[:,2] / r_s
 dat[:,3] = dat[:,3] / r_pd
 
 # Write out data
-#fpath = 'H:/dat'
-#fname = 'test.txt'
-#np.savetxt(''.join([fpath,fname]),dat)
+fpath = 'C:/Users/jspri/Dropbox/Jared/Data/2016_8-25 - OLEDWorks Panel Transients/'
+fname = 'CrackedPanel_19V-500us Pulse.txt'
+np.savetxt(''.join([fpath,fname]),dat)
 
 osc.inst.close()
