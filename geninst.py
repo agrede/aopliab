@@ -17,6 +17,7 @@ class PreAmp():
     detects_overload = False
     overload_delay = 0.1
     adc = None
+    ovrld = None
 
     def __init__(self, inst):
         pass
@@ -74,7 +75,21 @@ class PreAmp():
     @property
     def overload(self):
         """Returns True if currently overloaded"""
+        if self.ovrld is not None:
+            if self.ovrld():
+                if self.adc is None:
+                    return True
+            else:
+                return False
         if self.adc is not None:
+            ms0 = self.adc()
+            if (self.max_output < ms0):
+                    sleep(0.02)
+                    ms1 = self.adc()
+                    while ms1 < ms0:
+                        ms0 = ms1
+                        sleep(0.02)
+                        ms1 = self.adc()
             return (self.max_output < np.abs(self.adc()))
         else:
             return False

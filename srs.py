@@ -219,7 +219,7 @@ class SR570(PreAmp):
         gmi = self._gain_mode_index
         if gmi > 1:
             gmi = 0
-        return np.exp(self.noise_bases[gmi](np.log(sens)))
+        return np.exp(self.noise_bases[gmi](np.log(self.sensitivity)))
 
 
 class SR830(LockInAmplifier):

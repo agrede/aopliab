@@ -39,7 +39,7 @@
     "SMU": {
         "manufacturer": "Keithely",
         "model": "K2400",
-        "addr": "GPIB0::24::INSTR"
+        "addr": "GPIB0::23::INSTR"
     },
     "SPA": {
         "manufacturer": "HP",
@@ -53,7 +53,7 @@
     "LasPow": {
         "manufacturer": "Keithely",
         "model": "K2400",
-        "addr": "GPIB0::23::INSTR"
+        "addr": "GPIB0::30::INSTR"
     },
     "IRLaser": {
         "manufacturer": "Thorlabs",
@@ -127,13 +127,13 @@
     "ArdMeg": {
         "manufacturer": "ArdMeg",
         "model": "ArdMeg",
-        "addr": "ASRL14::INSTR",
+        "addr": "ASRL17::INSTR",
         "conn_params": {
             "baud_rate": 9600,
             "data_bits": 8,
             "stop_bits": 1,
             "write_termination": ["<LF>"],
-            "read_termination": ["<LF>"]
+            "read_termination": ["<CR>", "<LF>"]
         }
     }
 }

@@ -534,3 +534,34 @@ class SR7230(LockInAmplifier):
         self.slope = cs
         self.time_constant = ctc
         return rtn
+        
+    def ioread(self, bit):
+        if within_limits(bit, [0, 7]):
+            tmp = int(self.query("READBYTE")[0])
+            return ((tmp&(1<<bit)) != 0)
+        else:
+            return None
+        
+    def iowrite(self, bit, value):
+        if within_limits(bit, [0, 7]):
+            if not self.iodirin(bit):
+                cur = int(self.query("READBYTE")[0])
+                n = bool(value)
+                rtn = ((~(1<<bit)&cur)|((1<<bit)*n))
+                self.write("BYTE %d" % rtn)
+                
+    def iodirin(self, bit):
+        if within_limits(bit, [0, 7]):
+            tmp = int(self.query("PORTDIR")[0])
+            return ((tmp&(1<<bit)) != 0)
+        else:
+            return None
+            
+    @property
+    def osc_freq(self):
+        return (self.query("OF.")[0])
+        
+    @osc_freq.setter
+    def osc_freq(self, value):
+        if within_limits(value, [0, 2.5e5]):
+            self.write("OF. %0.5e" % value)
