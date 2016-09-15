@@ -17,11 +17,11 @@ stop = 3.5
 points = 351
 climit = 50e-3
 vlimit = 5.
-pth = "./dta/20160913%d.npz"
+pth = "./dta/20160915%d.npz"
 
-ard.write("setcpv 1")
+ard.query("setcpv 1")
 dta = []
-k = 2
+k = 22
 
 
 def ivs(smu, start, stop, points, climit, port):
@@ -41,7 +41,9 @@ def iscvoc(smu, vlimit, climit, port):
     smu.source_volt = True
     smu.current_limit = climit
     smu.voltage = 0.
+    smu.output = True
     isc = smu.measure[1]
+    smu.output = False
     smu.source_volt = False
     smu.voltage_limit = vlimit
     smu.current = 0.
@@ -60,7 +62,7 @@ def align(ard):
     ard.write("startcpv")
     time.sleep(60.)  # wait time between measures
     ard.write("stopcpv")
-    time.sleep(5.)  # Wait for algorithm to stop
+    time.sleep(10.)  # Wait for algorithm to stop
     ard.write("cpvtia")  # actually switches to SMU
     # input("Press Enter When Stopped...")
     return True
@@ -75,8 +77,8 @@ while(cont):
     cont = align(ard)
     if not cont:
         break
-    #am = iscvoc(smu, vlimit, climit, True)
-    #bm = iscvoc(smu, vlimit, climit, False)
+    am = iscvoc(smu, vlimit, climit, True)
+    bm = iscvoc(smu, vlimit, climit, False)
     a = ivs(smu, start, stop, points, climit, True)
     b = ivs(smu, start, stop, points, climit, False)
     c = suns(ard)
@@ -86,7 +88,7 @@ while(cont):
     p0.update(x, y)
     pwr = Area*(c*1.02279738e-07+3.43531676e-07)*calconst
     y2 = (-a[:, 0]*a[:, 1]).max()/pwr
-    p1.update(x, y2)
-    dta.append((tme, a, b, c))
+    p1.update(x, np.abs(y2))
+    dta.append((tme, a, b, c, am, bm))
     np.savez_compressed(pth % k, dta)
     k = k+1
