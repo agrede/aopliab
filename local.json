@@ -17,6 +17,11 @@
             "write_termination": ["<CR>", "<LF>"]
         }
     },
+    "SRSLockin": {
+    "manufacturer": "SRS",
+    "model": "SR830",
+    "addr": "GPIB0::1::INSTR"
+    },
     "LockInAmp": {
         "manufacturer": "Ametek",
         "model": "SR7230",
@@ -111,7 +116,7 @@
         "addr": "USB0::0x0957::0x8E18::MY51141103::0::INSTR"
     },
     "JeffARD": {
-        "port": "COM8",
+        "port": "COM19",
         "baud_rate": 9600,
         "data_bits": 8,
         "stop_bits": 1,
