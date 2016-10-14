@@ -152,6 +152,11 @@ class K2400():
     def clear_errors(self):
         self.inst.write("STAT:QUE:CLE")
         
+    def beep(self, time=0.5, freq=500):
+        if within_limits(freq, [65, 2e6]):
+            if within_limits(time, [0, 512/freq]):
+                self.inst.write("SYST:BEEP %f, %f" % (freq, time))
+        
 
 class K2485:
     inst = None
@@ -233,6 +238,7 @@ class K2485:
     def measurement(self):
         return [float(x) for x in re.split("A?,", self.inst.query("READ?"))]
 
+    
 
 class K6430():
     """

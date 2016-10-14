@@ -39,7 +39,7 @@
     "SMU": {
         "manufacturer": "Keithely",
         "model": "K2400",
-        "addr": "GPIB0::23::INSTR"
+        "addr": "GPIB0::30::INSTR"
     },
     "SPA": {
         "manufacturer": "HP",
@@ -80,7 +80,7 @@
     "ARD": {
         "manufacturer": "Arduino",
         "model": "UNO",
-        "addr": "ASRL9::INSTR",
+        "addr": "ASRL4::INSTR",
         "conn_params": {
             "baud_rate": 9600,
             "data_bits": 8,

@@ -17,9 +17,9 @@ stop = 3.5
 points = 351
 climit = 50e-3
 vlimit = 5.
-pth = "./dta/20160921%d.npz"
+pth = "./dta/20161006%d_AR.npz"
 
-ard.query("setcpv 1")
+ard.query("setcpv 5")
 dta = []
 k = 0
 
