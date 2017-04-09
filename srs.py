@@ -494,3 +494,118 @@ class SR830(LockInAmplifier):
     @property
     def magphase(self):
         return self.inst.query_ascii_values("SNAP? 3,4")
+
+
+class DS345():
+    """
+    PyVISA wrapper for SRS DS345 Waveform Generator
+    """
+
+    inst = None
+    config = None
+    _highz = 1.
+    frequency_limits = None
+    output_range = None
+    output_center = 0.0   # 0.0: disabled, 1.0: +Vpp/2, -1.0: -Vpp/2
+
+    def __init__(self, inst):
+        self.inst = inst
+        cfg_file = open("configs/srs.json")
+        cfg = json.load(cfg_file)
+        cfg_file.close()
+        self.config = cfg['DS345']
+        self.frequency_limits = np.array(self.config['frequency_limits'])
+        self.output_range = self.config['output_range']
+
+    def close(self):
+        self.inst.close()
+
+    def cls(self):
+        self.inst.write("*CLS")
+
+    @property
+    def highz(self):
+        return (self._highz > 1.)
+
+    @highz.setter
+    def highz(self, value):
+        if value:
+            self._highz = 2.0
+        else:
+            self._highz = 1.0
+
+    @property
+    def func(self):
+        return int(self.inst.query_ascii_values("FUNC?")[0])
+
+    @func.setter
+    def func(self, value):
+        if within_limits(int(value), [0, 5]):
+            self.inst.write("FUNC %d", value)
+
+    @property
+    def freq(self):
+        return self.query_ascii_values("FREQ?")[0]
+
+    @freq.setter
+    def freq(self, value):
+        if within_limits(value, self.frequency_limits[self.func]):
+            self.inst.write("FREQ %.11e" % value)
+
+    def setOutput(self, coff, camp, noff, namp):
+        if noff is not None:
+            if namp is not None:
+                if (np.abs(noff)+camp/2. <= self.output_range):
+                    self.inst.write("OFFS %.3e" % noff)
+                    self.inst.write("AMPL %.3eVP" % namp)
+                elif (np.abs(coff)+namp/2. <= self.output_range):
+                    self.inst.write("AMPL %.3eVP" % namp)
+                    self.inst.write("OFFS %.3e" % noff)
+                else:
+                    self.inst.write("OFFS 0")
+                    self.inst.write("AMPL %.3eVP" % namp)
+                    self.inst.write("OFFS %.3e" % noff)
+            else:
+                self.inst.write("OFFS %.3e" % noff)
+        elif namp is not None:
+            self.inst.write("AMPL %.3eVP" % namp)
+
+    @property
+    def offs(self):
+        return self.inst.query_ascii_values("OFFS?")[0]
+
+    @offs.setter
+    def offs(self, value):
+        coff = self.offs/self._highz
+        camp = self.ampl/self._highz
+        noff = value/(self._highz)
+        namp = None
+        if (np.abs(self.output_center) < 1.):
+            if (np.abs(noff) > self.output_range):
+                namp = 0.
+                noff = np.sign(noff)*self.output_range
+            elif (camp/2.+np.abs(noff) > self.output_range):
+                namp = 2.*(self.output_range - np.abs(noff))
+            self.setOutput(coff, camp, noff, namp)
+
+    @property
+    def ampl(self):
+        return (self._highz*float((self.inst.query("AMPL?"))[:-3]))
+
+    @ampl.setter
+    def ampl(self, value):
+        coff = self.offs/self._highz
+        camp = self.ampl/self._highz
+        noff = None
+        namp = np.abs(value)/(self._highz)
+        if (np.abs(self.output_center) < 1.):
+            if (namp/2. > self.output_range):
+                namp = 2.*self.output_range
+                noff = 0.
+            elif (namp/2.+np.abs(coff) > self.output_range):
+                noff = np.sign(coff)*(self.output_range - namp/2.)
+        else:
+            if (namp/2. > self.output_range):
+                namp = self.output_range/2.
+            noff = namp/2.*self.output_range
+        self.setOutput(coff, camp, noff, namp)
