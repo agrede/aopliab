@@ -565,3 +565,12 @@ class SR7230(LockInAmplifier):
     def osc_freq(self, value):
         if within_limits(value, [0, 2.5e5]):
             self.write("OF. %0.5e" % value)
+            
+    @property
+    def osc_amp(self):
+        return (self.query("OA.")[0])
+        
+    @osc_amp.setter
+    def osc_amp(self, value):
+        if within_limits(value, [0., 5.]):
+            self.write("OA. %0.6f" % value)

@@ -23,7 +23,15 @@ def getInstr(rm, name, local_config='local.json'):
         conn_params = {}
     return rm.open_resource(cfg[name]['addr'], **conn_params)
 
+"""Load a serial object"""
+def getSer(name, local_config='local.json'):
+    cfg_file = open(local_config)
+    cfg = json.load(cfg_file)
+    cfg_file.close()
+    
+    return srl.Serial(cfg[name]['port'], cfg[name]['baud_rate'], timeout=cfg[name]['timeout'])
 
+    
 def parseConnParams(params):
     if ('stop_bits' in params):
         if (params['stop_bits'] == 1):

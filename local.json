@@ -2,7 +2,7 @@
     "Monochromator": {
         "manufacturer": "ARC",
         "model": "SpecPro",
-        "com": 4,
+        "com": 2,
         "dll_path": "C:\\Program Files (x86)\\Princeton Instruments\\MonoControl\\ARC_SpectraPro.dll",
         "non_visa": true
     },
@@ -27,6 +27,7 @@
         "model": "SR7230",
         "addr": "TCPIP::169.254.150.230::50000::SOCKET",
         "conn_params": {
+            "timeout": 6000,
             "read_termination": ["<NULL>"],
             "write_termination": ["<NULL>"]
         }
@@ -82,6 +83,7 @@
         "model": "FW102C",
         "addr": "ASRL13::INSTR",
         "conn_params": {
+            "timeout": 6000,
             "baud_rate": 115200,
             "data_bits": 8,
             "stop_bits": 1,
@@ -133,6 +135,27 @@
             "data_bits": 8,
             "stop_bits": 1,
             "write_termination": ["<LF>"],
+            "read_termination": ["<CR>", "<LF>"]
+        }
+    },
+    "DelayLine": {
+        "manufacturer": "ArdMeg",
+        "model": "Tinsy",
+        "addr": "ASRL19::INSTR",
+        "conn_params": {
+            "baud_rate": 9600,
+            "data_bits": 8,
+            "stop_bits": 1,
+            "write_termination": ["<LF>"],
+            "read_termination": ["<CR>", "<LF>"]
+        }
+    },
+    "OBIS": {
+        "manufacturer": "Coherent",
+        "model": "OBIS mini-controller",
+        "addr": "ASRL21::INSTR",
+        "conn_params": {
+            "write_termination": ["<CR>"],
             "read_termination": ["<CR>", "<LF>"]
         }
     }
