@@ -165,3 +165,45 @@ def json_load(path):
     tmp = json.load(fp)
     fp.close()
     return tmp
+
+    
+# Get the device size from Gen 3 patterns
+def size_gen3(device_num):
+    if (device_num == 3 or device_num == 8):
+        l = 4
+        w = 4
+        area = l*w/100 #area in cm^2
+    else:
+        l = 2
+        w = 2
+        area = l*w/100 #area in cm^2
+    return area
+
+# Get the device size from Gen 4 patterns
+def size_gen4(deviceNum):
+    small = np.arange(1,19,1)  #small devices in center
+    if deviceNum in small:
+        l = 1
+        w = 1
+        area = l*w/100 #area in cm^2
+    else:
+        l = 2
+        w = 5
+        area = l*w/100 #area in cm^2
+    return area
+    
+# Get Princeton device sizes   
+def size_princetonPV(device_num):
+    if(device_num == 1 or device_num == 2 or device_num == 3):
+        r = 10E-3
+        area = np.pi*r**2/100 #area in cm^2
+    elif(device_num == 4 or device_num == 5 or device_num == 6):
+        r = 100E-3
+        area = np.pi*r**2/100 #area in cm^2
+    elif(device_num == 7 or device_num == 8 or device_num == 9):
+        r = 25E-3
+        area = np.pi*r**2/100 #area in cm^2
+    else: #(dNum == 10 or dNum == 11 or dNum == 12):
+        r = 5E-3
+        area = np.pi*r**2/100 #area in cm^2
+    return area

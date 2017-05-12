@@ -116,7 +116,7 @@
         "addr": "USB0::0x0957::0x8E18::MY51141103::0::INSTR"
     },
     "JeffARD": {
-        "port": "COM19",
+        "port": "COM4",
         "baud_rate": 9600,
         "data_bits": 8,
         "stop_bits": 1,

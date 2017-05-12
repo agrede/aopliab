@@ -23,12 +23,13 @@ points = 351
 climit = 100e-3
 climit2 = 1.
 vlimit = 5.
-pth = "./dta/20161014%d.npz"
-ptha = "./dta/20161014%s%d.txt"
+pth = "./dta/20161107%d.npz"
+ptha = "./dta/20161107%s%d.txt"
 
+ard.read_raw()
 ard.query("setcpv 1")
 dta = []
-k = 3
+k = 0
 
 
 def ivs(smu, start, stop, points, climit, port):
@@ -70,9 +71,9 @@ def align(ard, smu):
     time.sleep(60.)  # wait time between measures
     ard.write("stopcpv")
     #You have 10 seconds to move your goddamn hands away
-    for k in range(8):
-        smu.beep(.2, 25*k)
-        time.sleep(.2)
+#    for k in range(8):
+#        smu.beep(.2, 25*k)
+#        time.sleep(.2)
     time.sleep(10.)  # Wait for algorithm to stop
     ard.write("cpvtia")  # actually switches to SMU
     # input("Press Enter When Stopped...")
@@ -81,7 +82,7 @@ def align(ard, smu):
 
 p0 = ac.DynamicPlot()
 Area = np.pi*(10e-3)**2
-calconst = 1000./54.57e-6
+calconst = 1000./60.06e-6
 cont = True
 while(cont):
     cont = align(ard, smu)
@@ -90,10 +91,10 @@ while(cont):
         
     am = iscvoc(smu, vlimit, climit, True)
     bm = iscvoc(smu, vlimit, climit, False)
-    dm = iscvoc(smu2, vlimit, climit2, False)      #FIIIIIX
+    dm = iscvoc(smu2, vlimit, climit2, True)      #FIIIIIX
     a = ivs(smu, start, stop, points, climit, True)
     b = ivs(smu, start, stop, points, climit, False)
-    d = ivs(smu2, start2, stop2, points2, climit2, False) #FIIIIIX
+    d = ivs(smu2, start2, stop2, points2, climit2, True) #FIIIIIX
     c = suns(ard)
     tme = time.localtime()
     x = tme.tm_hour+tme.tm_min/60.+tme.tm_sec/3600.

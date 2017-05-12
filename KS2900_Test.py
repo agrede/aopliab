@@ -10,33 +10,69 @@ rm = visa.ResourceManager()
 instr = rm.open_resource(addr)
 smu = Keysight2900(instr)
 
-l = 25
-w = 2
-A = l*w/100 #area in cm^2
-#A = 0.1 #
-Jmax = 30 #mA/cm^2
+#initialize runs with: runs = np.zeros(shape=(10,3))
+runs = runs
+sNum = 1
+dNum = 3
+temp = 31
 
-dc_bias_start = -2;   dc_bias_stop = 10;   dc_bias_step = .01;
+dc_bias_start = -0.5;   dc_bias_stop = 6;   dc_bias_step = .05; 
+Jmax = 100 #mA/cm^2
+
+# Get the device size
+if (dNum == 3 or dNum == 8):
+    l = 4
+    w = 4
+    A = l*w/100 #area in cm^2
+else:
+    l = 2
+    w = 2
+    A = l*w/100 #area in cm^2
+
+#Get sample composition
+if (sNum == 1 or sNum ==2):
+    sName = '25pct Tef'
+else:
+    sName = '00pct Tef'
+
+fpath_base = 'C:/Users/Jared/Dropbox/Jared/Data/2017_01-16 - PTFE-NPD OLEDs/'
+fpath = ''.join([fpath_base, ('S%02dD%02d - %s/' %(sNum, dNum, sName))] )
+
+#Set up the SMU
 current_limit = Jmax * A / 1000
+dcreps = np.arange(0,2,1)
 integ_time = 3/60
-
-pulse_bias_start = 2.5;   pulse_bias_stop = 8.5;   pulse_bias_step = .005;
-voltages = np.arange(pulse_bias_start, pulse_bias_stop + pulse_bias_step, pulse_bias_step)
-pulsed_current_limit = 1.515
-pulse_integ_time = 8E-6
-
 photocurrent_limit = 0.5
-pulse_width = 95E-6
-pulse_period = pulse_width*1E3
 compliance_protection = True
 timeout = 3000
+t_dwell = 5 #dell time between consecutive measurements [s]
+
+# internal sweeps
+print("DC")
+for k in dcreps:
+    
+    #Increment the run counter
+    runs[dNum-1][sNum-1] = runs[dNum-1][sNum-1] + 1
+    print("S%02d D%02d Run %d" %(sNum, dNum, runs[dNum-1][sNum-1]))
+
+    #Run the LIV
+    liv = smu.dc_internal_LIV(dc_bias_start, dc_bias_stop, dc_bias_step, current_limit, 
+                               photocurrent_limit, compliance_protection, integ_time, timeout)
+    fname = ('S%02dD%02dR%02d - %s - %003dC.txt' %(sNum, dNum, runs[dNum-1][sNum-1], sName, temp ) )
+    np.savetxt(''.join([fpath,fname]),liv)
+    plt.semilogy(liv[:,0],liv[:,1])
+    time.sleep(t_dwell)   #dwell after the measurement
 
 
-fpath = 'C:/Users/jspri/Dropbox/Jared/Data/2016_9-10 - Large OLEDs/9-11/'
 
-count = 1  #LIV run number
-dcreps = np.arange(0,3,1)
-preps = np.arange(0,10,1)
+#Pulsed Setup
+#preps = np.arange(0,10,1)
+#pulse_bias_start = 2.5;   pulse_bias_stop = 8.5;   pulse_bias_step = .005;
+#voltages = np.arange(pulse_bias_start, pulse_bias_stop + pulse_bias_step, pulse_bias_step)
+#pulsed_current_limit = 1.515
+#pulse_integ_time = 8E-6
+#pulse_width = 95E-6
+#pulse_period = pulse_width*1E3
 
 #print("Pulsed")
 #for k in preps:
@@ -51,17 +87,3 @@ preps = np.arange(0,10,1)
 #    plt.semilogy(liv[:,0],liv[:,1])
 #    time.sleep(5)   #dwell after the measurement
     
-
-# internal sweeps
-print("DC")
-for k in dcreps:
-    print("Run %d" %k)
-    liv = smu.dc_internal_LIV(dc_bias_start, dc_bias_stop, dc_bias_step, current_limit, 
-                               photocurrent_limit, compliance_protection, integ_time, timeout)
-    fname = ('S01-D01-Run%2d - DC - AR1 - 2mm - set 2.txt' %count)
-    np.savetxt(''.join([fpath,fname]),liv)
-    plt.semilogy(liv[:,0],liv[:,1])
-    count+=1
-    time.sleep(5)   #dwell after the measurement
-
-

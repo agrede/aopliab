@@ -7,19 +7,18 @@ import matplotlib.pyplot as plt
 
 
 rm = visa.ResourceManager()
-smui = ac.getInstr(rm, "SMU")
-# pyri = ac.getInstr(rm, "LasPow")
+#smui = ac.getInstr(rm, "SMU")
+smui = ac.getInstr(rm, "LasPow")
 smu = K2400(smui)
-# pyr = K2400(pyri)
-ard = ac.getInstr(rm, "ARD")
-start = -0.2
-stop = 3.5
+#ard = ac.getInstr(rm, "ARD")
+start = -0.5
+stop = 2
 points = 351
 climit = 50e-3
 vlimit = 5.
-pth = "./dta/20161006%d_AR.npz"
+pth = "./dta/2017_1-7_Supercontinuum%d_Conc_cracked 3.npz"
 
-ard.query("setcpv 5")
+#ard.query("setcpv 30")
 dta = []
 k = 0
 
@@ -57,24 +56,25 @@ def suns(ard):
     return ard.query_ascii_values("measpyr")[0]
 
 
-def align(ard):
-    ard.write("cpvsmu")  # actually switches to TIA
-    ard.write("startcpv")
+#def align(ard):
+def align():
+#    ard.write("cpvsmu")  # actually switches to TIA
+#    ard.write("startcpv")
     a = input("Angle? ")
-    ard.write("stopcpv")
-    time.sleep(10.)  # Wait for algorithm to stop
-    ard.write("cpvtia")  # actually switches to SMU
+#    ard.write("stopcpv")
+#    time.sleep(10.)  # Wait for algorithm to stop
+#    ard.write("cpvtia")  # actually switches to SMU
     # input("Press Enter When Stopped...")
     return a
 
 
 p0 = ac.DynamicPlot(ptype="semilogy")
-p1 = ac.DynamicPlot(ptype="semilogy")
 Area = np.pi*(10e-3)**2
 calconst = 1000./54.57e-6
 cont = True
 while(cont):
-    angle = align(ard)
+#    angle = align(ard)
+    angle = align()
     cont = (angle != '')
     if not cont:
         break
@@ -83,7 +83,7 @@ while(cont):
     tme = time.localtime()
     x = float(angle)
     y = am[0]
-    p0.update(x, y)
+    p0.update(x, abs(y))
     dta.append((tme, angle, a, am))
     np.savez_compressed(pth % k, dta)
     k = k+1
