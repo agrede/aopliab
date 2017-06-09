@@ -2,6 +2,75 @@ import re
 from aopliab_common import within_limits, json_load, get_bool, set_bool
 import numpy as np
 import weakref
+from time import time
+
+
+class HP4192A():
+    """
+    PyVISA wrapper fro HP 4192A impedence analyzer
+    """
+
+    config = {}
+    freq_range = None
+    bias_range = None
+    osc_range = None
+    _osc = 0.005
+    _bias = 0.00
+    _freq = 1e3
+    _series = True
+    rdrgx = re.compile(r'([+-]\d+\.\d+E[+-]\d+).+([+-]\d+\.\d+E[+-]\d+)')
+    timeout = 10.
+
+    def __init__(self, inst):
+        self.inst = inst
+        cfg = json_load("configs/keysight.json")
+        self.config = cfg['HP4192A']
+        self.freq_range = np.array(self.config['freq_range'])
+        self.bias_range = np.array(self.config['bias_range'])
+        self.osc_range = np.array(self.config['osc_range'])
+        self.inst.write("DC1")
+        self.inst.write("A2B1C2R8D1F0H0V1T3")
+
+    @property
+    def freq(self):
+        return self._freq
+
+    @freq.setter
+    def freq(self, value):
+        if within_limits(value, self.freq_range):
+            self._freq = value
+            self.inst.write("FR"+("%0.8f" % (value*1e-3))[:9]+"EN")
+
+    @property
+    def bias(self):
+        return self._bias
+
+    @bias.setter
+    def bias(self, value):
+        if within_limits(value, self.bias_range):
+            self._bias = value
+            self.inst.write("BI%0.2fEN" % value)
+
+    @property
+    def osc(self):
+        return self._osc
+
+    @osc.setter
+    def osc(self, value):
+        if within_limits(value, self.osc_range):
+            self._osc = value
+            self.inst.write("OL%0.3fEN" % value)
+
+    @property
+    def measurement(self):
+        t0 = time()
+        self.inst.write("EX")
+        tmp = 0
+        while ((tmp & 1) != 1 and time()-t0 < self.timeout):
+            tmp = self.inst.stb
+        mt = self.rdrgx.search(str(self.inst.read_raw()))
+        return np.array([mt.group(1), mt.group(2)])
+
 
 
 class InfiniiVision5000():

@@ -85,7 +85,7 @@ class EqeUi(QtGui.QMainWindow):
                 lstart = self.diodes[self.pdidx]['range'][0]*1e9
             if lstop > self.diodes[self.pdidx]['range'][1]*1e9:
                 lstop = self.diodes[self.pdidx]['range'][1]*1e9
-        
+
         lam = eqe.brk_wavelength(lstart, lstop, lstep, self.filters_curr,
                                  overlap=self.overlap)
 

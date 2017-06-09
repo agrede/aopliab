@@ -3,5 +3,10 @@
         "acqtypes": ["NORM", "AVER", "HRES", "PEAK"],
         "formats": ["WORD", "BYTE", "ASC"],
         "points_modes": ["NORM", "MAX", "RAW"]
+    },
+    "HP4192A": {
+        "frequency_range": [5., 1.3e7],
+        "bias_range": [-35., 35.],
+        "osc_range": [0.005, 1.100]
     }
 }
