@@ -256,3 +256,66 @@ class InfiniiVision5000Channel:
     @offset.setter
     def offset(self, value):
         pass
+
+
+class E3640():
+    """
+    PyVISA wrapper for E3640 DC power supply
+    """
+
+    config = {}
+
+    def __init__(self, inst):
+        self.inst = inst
+
+    @property
+    def voltage_range(self):
+        mn = self.inst.query_ascii_values("VOLT? MIN")[0]
+        mx = self.inst.query_ascii_values("VOLT? MAX")[0]
+        return np.array([mn, mx])
+
+    @property
+    def current_range(self):
+        mn = self.inst.query_ascii_values("CURR? MIN")[0]
+        mx = self.inst.query_ascii_values("CURR? MAX")[0]
+        return np.array([mn, mx])
+
+    @property
+    def voltage(self):
+        return self.inst.query_ascii_values("VOLT?")[0]
+
+    @voltage.setter
+    def voltage(self, value):
+        if within_limits(value, self.voltage_range):
+            self.inst.write("VOLT %f" % value)
+
+    @property
+    def current(self):
+        return self.inst.query_ascii_values("CURR?")[0]
+
+    @current.setter
+    def current(self, value):
+        if within_limits(value, self.current_range):
+            self.inst.write("CURR %f" % value)
+
+    @property
+    def low_range(self):
+        return (self.inst.query("VOLT:RANG?") == "P8V")
+
+    @low_range.setter
+    def low_range(self, value):
+        if value:
+            self.inst.write("VOLT:RANG LOW")
+        else:
+            self.inst.write("VOLT:RANG HIGH")
+
+    @property
+    def output(self):
+        return (self.query_ascii_values("OUTP?")[0] == 1)
+
+    @output.setter
+    def output(self, value):
+        if value:
+            self.inst.write("OUTP ON")
+        else:
+            self.inst.write("OUTP OFF")
