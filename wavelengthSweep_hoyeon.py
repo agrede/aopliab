@@ -10,6 +10,7 @@ from thorlabs import FW102C
 
 plt.hold(True)
 
+# Connect
 rm = visa.ResourceManager()
 mon = eqe.get_mono(rm)
 lia = eqe.get_lia(rm)
@@ -25,6 +26,7 @@ fw.inst.read_raw()
 lia.preamps = np.array([tia])
 tia.current_freq = lia.freq
 
+# Pre-amp things
 def adc():
     ms0 = (lia.cmeas)[-2]
     if ms0 > 1.5:
@@ -47,12 +49,15 @@ lia.waittimes.mask = ((np.atleast_2d(lia.tcons).T < 30e-3)+
                       (np.atleast_2d(lia.slopes) < 12)) > 0
 lia.enbws.mask = lia.waittimes.mask
 
-tia.sensitivity = 1e-6
+# Save path
+
 svepth = "C:/Users/Maxwell/Desktop/Student Data/Hoyeon/test/"#test1.npz"
 
+
+tia.sensitivity = 1e-6
 lia.ac_auto_gain = False
 
-
+# Functions
 def mags():
     mag = lia.cmags
     nse = 2.*lia.approx_noise(mag)*np.sqrt(lia.enbw)

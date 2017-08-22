@@ -6,6 +6,7 @@ from time import sleep
 from geninst import LockInAmplifier
 import numpy.ma as ma
 from pyvisa.util import from_ascii_block
+from pyvisa.constants import VI_SUCCESS_MAX_CNT
 
 
 class SR7230(LockInAmplifier):
@@ -37,15 +38,26 @@ class SR7230(LockInAmplifier):
         self.enbws = bwm/tc
         self.waittimes = sw*tc
 
+    def read_term(self, size):
+        rt = self.inst.read_termination
+        self.inst.read_termination = ''
+        with self.inst.ignore_warning(VI_SUCCESS_MAX_CNT):
+            ret = bytes()
+            while len(ret) < size:
+                chunk, status = self.inst.visalib.read(
+                        self.inst.session, size-len(ret))
+                ret += chunk
+        self.inst.read_termination = rt
+        return ret
+
     def query(self, str):
         tmp1 = self.inst.query_ascii_values(str, separator=self.separator)
-        self.inst.read_raw()
+        self.read_term(2)
         return tmp1
 
     def write(self, str):
         self.inst.write(str)
-        self.inst.read_raw()
-        self.inst.read_raw()
+        self.read_term(3)
 
     def close(self):
         self.inst.close()

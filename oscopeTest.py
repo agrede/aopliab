@@ -1,12 +1,15 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Wed Jun  3 07:42:49 2015
+import numpy as np
+import aopliab_common as ac
+import visa
+import eqe
+from time import sleep, time
+import matplotlib.pyplot as plt
+from keysight import InfiniiVision5000, InfiniiVision5000Channel
 
-@author: Maxwell-Faraday
-"""
 
-wav = np.zeros((t.size, 500))
+rm = visa.ResourceManager()
 
-for k in range(wav.shape[1]):
-    oscpi.write("DIG 1")
-    wav[:, k] = np.array(oscpi.query_binary_values("WAV:DATA?", datatype='B'))
+osci = ac.getInstr(rm, "OScope")
+osc = InfiniiVision5000(osci)
+osc1 = InfiniiVision5000Channel(osc, 1)
+osc4 = InfiniiVision5000Channel(osc, 4)

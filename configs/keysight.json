@@ -2,11 +2,12 @@
     "InfiniiVision5000": {
         "acqtypes": ["NORM", "AVER", "HRES", "PEAK"],
         "formats": ["WORD", "BYTE", "ASC"],
-        "points_modes": ["NORM", "MAX", "RAW"]
+        "points_modes": ["NORM", "MAX", "RAW"],
+        "chan_range": [1, 4]
     },
     "HP4192A": {
-        "frequency_range": [5., 1.3e7],
-        "bias_range": [-35., 35.],
+        "freq_range": [5.0, 1.3e7],
+        "bias_range": [-35.0, 35.0],
         "osc_range": [0.005, 1.100]
     }
 }

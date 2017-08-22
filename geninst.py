@@ -349,9 +349,13 @@ class LockInAmplifier():
         slopes = np.zeros(mags.size)
         wts = np.zeros(mags.size)
         for k, df in enumerate(dfs):
-            k0, k1 = np.where(
-                self.waittimes == self.waittimes[
-                    (self.enbws <= df)].min())
+            if np.any(self.enbws <= df):
+                k0, k1 = np.where(
+                    self.waittimes == self.waittimes[
+                        (self.enbws <= df)].min())
+            else:
+                k0, k1 = np.where(
+                    self.waittimes == self.waittimes.max())
             if k0.size > 1 and k1.size > 1:
                 k2 = np.argmin(np.array([
                                 self.enbws[n0, n1] for n0, n1 in zip(k0, k1)]))

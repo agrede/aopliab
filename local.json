@@ -40,6 +40,11 @@
     "SMU": {
         "manufacturer": "Keithely",
         "model": "K2400",
+        "addr": "GPIB0::30::INSTR"
+    },
+    "PulSMU": {
+        "manufacturer": "Keithely",
+        "model": "K2400",
         "addr": "GPIB0::23::INSTR"
     },
     "SPA": {
@@ -64,7 +69,7 @@
     "PAM": {
         "manufacturer": "Keithely",
         "model": "K2400",
-        "addr": "GPIB0::14::INSTR"
+        "addr": "GPIB0::15::INSTR"
     },
     "OpticalChopper": {
         "manufacturer": "Thorlabs",
@@ -150,6 +155,31 @@
             "read_termination": ["<CR>", "<LF>"]
         }
     },
+    "PulsMotor": {
+        "manufacturer": "ArdMeg",
+        "model": "Ard",
+        "addr": "ASRL26::INSTR",
+        "conn_params": {
+            "timeout": 10000,
+            "baud_rate": 9600,
+            "data_bits": 8,
+            "stop_bits": 1,
+            "write_termination": ["<LF>"],
+            "read_termination": ["<CR>", "<LF>"]
+        }
+    },
+    "SC": {
+        "manufacturer": "fienium",
+        "model": "SC4X0",
+        "addr": "ASRL29::INSTR",
+        "conn_params": {
+            "baud_rate": 19200,
+            "data_bits": 8,
+            "stop_bits": 1,
+            "write_termination": ["<CR>"],
+            "read_termination": ["<CR>"]
+        }
+    },
     "OBIS": {
         "manufacturer": "Coherent",
         "model": "OBIS mini-controller",
@@ -158,5 +188,15 @@
             "write_termination": ["<CR>"],
             "read_termination": ["<CR>", "<LF>"]
         }
+    },
+    "ImpAn": {
+        "manufacturer": "HP",
+        "model": "HP4192A",
+        "addr": "GPIB0::18::INSTR"
+    },
+    "DCSupply": {
+        "manufacturer": "HP",
+        "model": "E3640A",
+        "addr": "GPIB0::5::INSTR"
     }
 }
