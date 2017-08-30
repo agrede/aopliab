@@ -1,11 +1,11 @@
 import json
 import numpy as np
-from aopliab_common import within_limits, nearest_index
+from aopliab_common import within_limits, nearest_index, get_bool, set_bool
 import numpy.ma as ma
 from scipy.interpolate import interp1d
 from geninst import PreAmp, LockInAmplifier
 from time import sleep
-
+import weakref
 
 class SR570(PreAmp):
     """
@@ -609,3 +609,194 @@ class DS345():
                 namp = self.output_range/2.
             noff = namp/2.*self.output_range
         self.setOutput(coff, camp, noff, namp)
+
+
+class DG645():
+    """
+    Wrapper for DG645 Delay generator
+    """
+
+    inst = None
+    delay_range = None
+    ampl_range = None
+    output_range = None
+    offset_range = None
+    inhibit_range = None
+    chan_range = None
+    chan_out_range = None
+    trig_rate_range = None
+    trig_thresh_range = None
+    trig_source_range = None
+
+    def __init__(self, inst):
+        self.inst = inst
+        cfg_file = open("configs/srs.json")
+        cfg = json.load(cfg_file)
+        cfg_file.close()
+        self.config = cfg['DG645']
+        self.delay_range = np.array(self.config['delay_range'])
+        self.ampl_range = np.array(self.config['ampl_range'])
+        self.output_range = np.array(self.config['output_range'])
+        self.offset_range = np.array(self.config['offset_range'])
+        self.inhibit_range = np.array(self.config['inhibit_range'])
+        self.chan_range = np.array(self.config['channel_range'])
+        self.chan_out_range = np.array(
+            self.config['channel_output_range'])
+        self.trig_rate_range = np.array(
+            self.config['trigger_rate_range'])
+        self.trig_thresh_range = np.array(
+            self.config['trigger_threshold_range'])
+        self.trig_source_range = np.array(
+            self.config['trigger_source_range'])
+
+    @property
+    def trig_adv(self):
+        return get_bool(self.inst, "ADVT")
+
+    @trig_adv.setter
+    def trig_adv(self, value):
+        set_bool(self.inst, "ADVT", value)
+
+    @property
+    def trig_hold(self):
+        return self.inst.query_ascii_values("HOLD?")[0]
+
+    @trig_hold.setter
+    def trig_hold(self, value):
+        if within_limits(value, self.delay_range):
+            self.inst.write("HOLD {}".format(value))
+
+    @property
+    def inhibit(self):
+        return int(self.inst.query_ascii_values("INHB?"))
+
+    @inhibit.setter
+    def inhibit(self, value):
+        if within_limits(int(value), self.inhibit_range):
+            self.inst.write("INHB %d" % value)
+
+    @property
+    def trig_thresh(self):
+        return self.inst.query_ascii_values("TLVL?")[0]
+
+    @trig_thresh.setter
+    def trig_thresh(self, value):
+        if within_limits(value, self.trig_thresh_range):
+            self.inst.write("TLVL %f" % value)
+
+    @property
+    def trig_rate(self):
+        return self.inst.query_ascii_values("TRAT?")[0]
+
+    @trig_rate.setter
+    def trig_rate(self, value):
+        if within_limits(value, self.trig_rate_range):
+            self.inst.write("TRAT %e" % value)
+
+    @property
+    def trig_source(self):
+        return int(self.inst.query_ascii_values("TSRC?")[0])
+
+    @trig_source.setter
+    def trig_source(self, value):
+        if within_limits(int(value), self.trig_source_range):
+            self.inst.write("TSRC %d" % value)
+
+    def t0_delay(self, chan):
+        if chan == 0:
+            return 0.
+        tmp = self.inst.query_ascii_values("DLAY? %d" % chan)
+        return (tmp[1]+self.t0_delay(int(tmp[0])))
+
+
+class DG645Channel():
+    """
+    Delay channel for DG645
+    """
+    _parent = None
+    _number = None
+
+    def __init__(self, parent, number):
+        self._parent = parent
+        self._number = int(number)
+        self.write("LINK %d,%d" % (self.intNum[1], self.intNum[0]))
+
+    def write(self, value):
+        return self._parent.inst.write(value)
+
+    def query(self, value):
+        return self._parent.inst.query_ascii_values(value)
+
+    @property
+    def intNum(self):
+        return (np.array([0, 1])+2*(self._number))
+
+    @property
+    def link(self):
+        return int(self.query("LINK?%d" % self.intNum[0])[0])
+
+    @link.setter
+    def link(self, value):
+        if within_limits(int(value), self._parent.chan_range):
+            self.write("LINK %d,%d" % (self.intNum[0], value))
+
+    @property
+    def delay(self):
+        return self._parent.query("DLAY?%d" % self.intNum[0])[1]
+
+    @delay.setter
+    def delay(self, value):
+        if within_limits(value, self._parent.delay_range):
+            tmp = "{}".format(value)
+            self.write(
+                "DLAY %d,%d,%s" % (self.intNum[0], self.link, tmp))
+
+    @property
+    def ampl(self):
+        self.query("LAMP?%d" % self._number)[0]
+
+    @ampl.setter
+    def ampl(self, value):
+        if within_limits(value, self._parent.ampl_range):
+            self.write("LAMP %d,%f" % (self._number, value))
+
+    @property
+    def offset(self):
+        self.query("LOFF?%d" % self._number)[0]
+
+    @offset.setter
+    def offset(self, value):
+        if within_limits(value, self._parent.offset_range):
+            self.write("LOFF %d,%f" % (self._number, value))
+
+    @property
+    def polarity_positive(self):
+        return (self.query("LPOL?%d" % self._number)[0] > 0)
+
+    @polarity_positive.setter
+    def polarity_positive(self, value):
+        if value:
+            self.write("LPOL %d,1" % self._number)
+        else:
+            self.write("LPOL %d,0" % self._number)
+
+    @property
+    def width(self):
+        return self.query("DLAY?%d" % self.intNum[1])[0]
+
+    @width.setter
+    def width(self, value):
+        if within_limits(value, self._parent.delay_range):
+            tmp = "{}".format(value)
+            self.write(
+                "DLAY %d,%d,%s" % (self.intNum[1], self.intNum[0], tmp))
+
+    def out_ttl(self):
+        self.offset = 0.
+        self.ampl = 4.
+        self.polarity_positive = True
+
+    def out_nim(self):
+        self.offset = 0.
+        self.ampl = 0.8
+        self.polarity_positive = False
