@@ -668,7 +668,7 @@ class DG645():
 
     @property
     def inhibit(self):
-        return int(self.inst.query_ascii_values("INHB?"))
+        return int(self.inst.query_ascii_values("INHB?")[0])
 
     @inhibit.setter
     def inhibit(self, value):
@@ -717,7 +717,7 @@ class DG645Channel():
     _number = None
 
     def __init__(self, parent, number):
-        self._parent = parent
+        self._parent = weakref.proxy(parent)
         self._number = int(number)
         self.write("LINK %d,%d" % (self.intNum[1], self.intNum[0]))
 
@@ -733,7 +733,7 @@ class DG645Channel():
 
     @property
     def link(self):
-        return int(self.query("LINK?%d" % self.intNum[0])[0])
+        return int(self.query("LINK? %d" % self.intNum[0])[0])
 
     @link.setter
     def link(self, value):
@@ -742,7 +742,7 @@ class DG645Channel():
 
     @property
     def delay(self):
-        return self._parent.query("DLAY?%d" % self.intNum[0])[1]
+        return self.query("DLAY? %d" % self.intNum[0])[1]
 
     @delay.setter
     def delay(self, value):
@@ -753,7 +753,7 @@ class DG645Channel():
 
     @property
     def ampl(self):
-        self.query("LAMP?%d" % self._number)[0]
+        return self.query("LAMP? %d" % self._number)[0]
 
     @ampl.setter
     def ampl(self, value):
@@ -762,7 +762,7 @@ class DG645Channel():
 
     @property
     def offset(self):
-        self.query("LOFF?%d" % self._number)[0]
+        return self.query("LOFF? %d" % self._number)[0]
 
     @offset.setter
     def offset(self, value):
@@ -771,7 +771,7 @@ class DG645Channel():
 
     @property
     def polarity_positive(self):
-        return (self.query("LPOL?%d" % self._number)[0] > 0)
+        return (self.query("LPOL? %d" % self._number)[0] > 0)
 
     @polarity_positive.setter
     def polarity_positive(self, value):
@@ -782,7 +782,7 @@ class DG645Channel():
 
     @property
     def width(self):
-        return self.query("DLAY?%d" % self.intNum[1])[0]
+        return self.query("DLAY? %d" % self.intNum[1])[1]
 
     @width.setter
     def width(self, value):

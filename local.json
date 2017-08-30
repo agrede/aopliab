@@ -22,6 +22,11 @@
         "model": "DS345",
         "addr": "GPIB0::19::INSTR"
     },
+    "DelayGen": {
+        "manufacturer": "SRS",
+        "model": "DG645",
+        "addr": "GPIB0::17::INSTR"
+    },
     "LockInAmp": {
         "manufacturer": "Ametek",
         "model": "SR7230",
