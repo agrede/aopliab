@@ -28,10 +28,8 @@ def getSer(name, local_config='local.json'):
     cfg_file = open(local_config)
     cfg = json.load(cfg_file)
     cfg_file.close()
-    
     return srl.Serial(cfg[name]['port'], cfg[name]['baud_rate'], timeout=cfg[name]['timeout'])
 
-    
 def parseConnParams(params):
     if ('stop_bits' in params):
         if (params['stop_bits'] == 1):
@@ -74,18 +72,16 @@ def nearest_index(value, values, rndup):
 
 
 class DynamicPlot():
-
     lines = []
+    error_L = []
+    error_Bar = []
     ptype = "plot"
     dlstyle = "o-"
-
-    def __init__(self, ptype="plot", lstyle="o-"):
-        self.ptype = ptype
-        self.dlstyle = lstyle
+    def __init__(self, type = "plot", lstyle="o-"):
         # Set up plot
         self.figure, self.ax = plt.subplots()
-        self.addnew()
-        #Autoscale on unknown axis and known lims on the other
+        self.addnew(type, lstyle)
+        # Autoscale on unknown axis and known lims on the other
         self.ax.set_autoscale_on(True)
 
     def addnew(self, ptype=None, lstyle=None):
@@ -99,19 +95,49 @@ class DynamicPlot():
             tline, = self.ax.semilogy([], [], lstyle)
         elif (ptype is "semilogx"):
             tline, = self.ax.semilogx([], [], lstyle)
+        elif (ptype is "errorbar"):
+            if lstyle is None:
+                self.errorlstyle  = self.dlstyle
+            else : self.errorlstyle = lstyle
+            return
         else:
             tline, = self.ax.plot([], [], lstyle)
+        self.error_L.append([])
+        self.error_Bar.append([])
         self.lines.append(tline)
 
-    def update(self, newx, newy):
-        k = len(self.lines)-1
-        #Update data (with the new _and_ the old points)
+    def update(self, newx, newy, error_up = None, error_down= None): # error_up an error_down are positive values
+        k = len(self.lines) - 1
+        if (error_up and len(self.lines)==0): # trying to determine when we have new errorbar first case
+            if not error_down: error_down = error_up
+            tline, error_l, error_bar = self.ax.errorbar([newx], [newy], [[error_up], [error_down]], fmt=self.errorlstyle)
+            self.lines.append(tline)
+            self.error_L.append(error_l)
+            self.error_Bar.append(error_bar)
+        elif (error_up and len(self.error_Bar[-1])==0): # trying to determine when we have new errorbar second case
+            if not error_down: error_down = error_up
+            tline, error_l, error_bar = self.ax.errorbar([newx], [newy], [[error_up], [error_down]], fmt=self.errorlstyle)
+            self.lines.append(tline)
+            self.error_L.append(error_l)
+            self.error_Bar.append(error_bar)
+        elif error_up:
+            if not error_down: error_down = error_up
+            self.lines[k].set_xdata(np.append(self.lines[k].get_xdata(), newx))
+            self.lines[k].set_ydata(np.append(self.lines[k].get_ydata(), newy))
+            self.error_Bar[k][0].set_segments(np.append(self.error_Bar[k][0].get_segments(), [np.array([[newx, newy + error_up], [newx, newy - error_down]])] ,axis=0))
+            self.error_L[k][0].set_ydata(np.append(self.error_L[k][0].get_ydata(), newy - error_down))
+            self.error_L[k][1].set_ydata(np.append(self.error_L[k][1].get_ydata(), error_up + newy))
+            self.error_L[k][0].set_xdata(np.append(self.error_L[k][0].get_xdata(), newx))
+            self.error_L[k][1].set_xdata(np.append(self.error_L[k][1].get_xdata(), newx))
+        else:
+	 #Update data (with the new _and_ the old points)
         self.lines[k].set_xdata(np.append(self.lines[k].get_xdata(), newx))
         self.lines[k].set_ydata(np.append(self.lines[k].get_ydata(), newy))
         #Need both of these in order to rescale
+
         self.ax.relim()
         self.ax.autoscale_view()
-        #We need to draw *and* flush
+        # We need to draw *and* flush
         self.figure.canvas.draw()
         self.figure.canvas.flush_events()
 
@@ -125,7 +151,6 @@ class DynamicPlot():
         self.ax.autoscale_view()
         self.figure.canvas.draw()
         self.figure.canvas.flush_events()
-
 
 def get_limits(inst, query):
     return [
