@@ -1,6 +1,6 @@
 import numpy as np
 import numpy.ma as ma
-from aopliab_common import within_limits, nearest_index
+from aopliab.aopliab_common import within_limits, nearest_index
 from time import sleep
 
 
@@ -296,6 +296,7 @@ class LockInAmplifier():
                     sleep(0.1)
                     if self.preamps[k].overload:
                         print("GAHH FUCK")
+                        print(f"adc() {self.preamps[k].adc()}, max output {self.preamps[k].max_output}, tia.sens {cps}")
                         self.preamps[k].fix_overload()
                         m = m*self.preamps[k].sensitivity/cps
                         js[k] = js[k]*self.preamps[k].sensitivity/cps
