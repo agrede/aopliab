@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import json
 import visa
 import re
+import serial as srl
 
 
 def within_limits(value, limits):
@@ -23,15 +24,15 @@ def getInstr(rm, name, local_config='local.json'):
         conn_params = {}
     return rm.open_resource(cfg[name]['addr'], **conn_params)
 
-"""Load a serial object"""
+
 def getSer(name, local_config='local.json'):
+    """Load a serial object"""
     cfg_file = open(local_config)
     cfg = json.load(cfg_file)
     cfg_file.close()
-    
-    return srl.Serial(cfg[name]['port'], cfg[name]['baud_rate'], timeout=cfg[name]['timeout'])
+    return srl.Serial(cfg[name]['addr'], cfg[name]['conn_params']['baud_rate'], timeout=cfg[name]['conn_params']['timeout'])
 
-    
+
 def parseConnParams(params):
     if ('stop_bits' in params):
         if (params['stop_bits'] == 1):
@@ -67,28 +68,33 @@ def nearest_index(value, values, rndup):
         value = tvalues[0]
     elif(value > tvalues[-1]):
         value = tvalues[-1]
-    idx = np.where(value <= tvalues)[0][0]
+    try:
+        idx = np.where(value <= tvalues)[0][0]
+    except IndexError:
+        print(f"nearest_index({value}, {values})")
+        raise IndexError
     if (not rndup and value < tvalues[idx]):
         idx = idx-1
     return k[idx]
 
 
 class DynamicPlot():
-
-    lines = []
     ptype = "plot"
     dlstyle = "o-"
 
-    def __init__(self, ptype="plot", lstyle="o-"):
+    def __init__(self, ptype="plot", lstyle="o-", fig=None, label=None):
         self.ptype = ptype
         self.dlstyle = lstyle
+        self.lines = []
         # Set up plot
-        self.figure, self.ax = plt.subplots()
-        self.addnew()
+        self.figure, self.ax = plt.subplots(num=fig)
+        #self.addnew(label = label)
+        if label:
+            self.ax.legend()
         #Autoscale on unknown axis and known lims on the other
         self.ax.set_autoscale_on(True)
 
-    def addnew(self, ptype=None, lstyle=None):
+    def addnew(self, ptype=None, lstyle=None, label=None):
         if ptype is None:
             ptype = self.ptype
         if lstyle is None:
@@ -101,6 +107,9 @@ class DynamicPlot():
             tline, = self.ax.semilogx([], [], lstyle)
         else:
             tline, = self.ax.plot([], [], lstyle)
+        if label:
+            tline.set_label(label)
+            self.ax.legend()
         self.lines.append(tline)
 
     def update(self, newx, newy):
