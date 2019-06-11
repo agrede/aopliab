@@ -1,9 +1,9 @@
 import json
 import numpy as np
 import collections
-from aopliab_common import within_limits, nearest_index
+from aopliab.aopliab_common import within_limits, nearest_index
 from time import sleep
-from geninst import LockInAmplifier
+from aopliab.geninst import LockInAmplifier
 import numpy.ma as ma
 from pyvisa.util import from_ascii_block
 from pyvisa.constants import VI_SUCCESS_MAX_CNT
@@ -169,7 +169,7 @@ class SR7230(LockInAmplifier):
             elif k == 0:
                 self.write("SEN %d" % idx)
         else:
-            idx = nearest_index(v, self.senss[:, 0], True)+3
+            idx = nearest_index(value, self.senss[:, 0], True)+3
             self.write("SEN %d" % idx)
 
     def run_auto_sensitivity(self):
@@ -187,7 +187,7 @@ class SR7230(LockInAmplifier):
     def ac_gain(self, value):
         if (self.ac_auto_gain):
             self.ac_auto_gain = False
-        idx = nearest_index(value, self.gains)
+        idx = nearest_index(value, self.gains, True)
         self.write("ACGAIN %d" % idx)
 
     @property
