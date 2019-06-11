@@ -1,5 +1,5 @@
 import re
-from aopliab_common import within_limits, json_load, get_limits
+from aopliab.aopliab_common import within_limits, json_load, get_limits
 import numpy as np
 import time
 
