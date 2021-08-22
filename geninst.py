@@ -401,3 +401,366 @@ class LockInAmplifier():
         return (np.vstack((
             mags*self.noise_ratio,
             self.noise_base)).max(axis=0))
+
+
+class ParameterAnalyzer():
+    _use_channels = []
+    def __init__(self, inst):
+        pass
+
+    @property
+    def use_channels(self):
+        pass
+
+    @use_channels.setter
+    def use_channels(self, value):
+        pass
+
+
+class SMU():
+
+    def __init__(self, inst, parent=None, number=None):
+        pass
+
+    @property
+    def output(self):
+        """
+        Output state of the SMU (True = on)
+        """
+        pass
+
+    @output.setter
+    def output(self, value):
+        """
+        Set the output state of the SMU (True = on)
+        """
+        pass
+
+    @property
+    def source_range(self):
+        """
+        Source in voltage mode (True=Voltage, False=Current)
+        """
+        pass
+
+    @property
+    def source_voltage(self):
+        """
+        Source in voltage mode (True=Voltage, False=Current)
+        """
+        pass
+
+    @source_voltage.setter
+    def source_voltage(self, value):
+        """
+        Source in voltage mode (True=Voltage, False=Current)
+        """
+        pass
+
+    @property
+    def source_mode(self):
+        """
+        Source mode ('LINear' / 'LOGarithmic' / 'LIST' / 'FIXed')
+        """
+        pass
+
+    @source_mode.setter
+    def source_mode(self, value):
+        """
+        Source mode ('LINear' / 'LOGarithmic' / 'LIST' / 'FIXed')
+        """
+        pass
+
+    @property
+    def sweep_up(self):
+        """
+        bool sweep up == True
+        """
+        pass
+
+    @sweep_up.setter
+    def sweep_up(self):
+        """
+        bool sweep up == True
+        """
+        pass
+
+    @property
+    def sweep_points(self):
+        """
+        int number of points
+        """
+        pass
+
+    @sweep_points.setter
+    def sweep_points(self, value):
+        """
+        int number of points
+        """
+        pass
+
+    @property
+    def sweep_bidirectional(self):
+        """
+        bool bi-directional sweep (double)
+        """
+        pass
+
+    @sweep_bidirectional.setter
+    def sweep_bidirectional(self, value):
+        """
+        bool bi-directional sweep (double)
+        """
+        pass
+
+    @property
+    def bias(self):
+        """
+        Source value/range/values
+        """
+        pass
+
+    @bias.setter
+    def bias(self, value):
+        """
+        Source value/range/values
+        """
+        pass
+
+    @property
+    def compliance(self):
+        """
+        Compliance value
+        """
+        pass
+
+    @compliance.setter
+    def compliance(self, value):
+        """
+        Compliance value
+        """
+        pass
+
+    @property
+    def kelvin(self):
+        """
+        bool Kelvin or 4 point probe mode
+        """
+        pass
+
+    @kelvin.setter
+    def kelvin(self, value):
+        """
+        bool Kelvin or 4 point probe mode
+        """
+        pass
+
+    @property
+    def integration_time(self):
+        """
+        Integration time in seconds
+        """
+        pass
+
+    @integration_time.setter
+    def integration_time(self, value):
+        """
+        Integration time in seconds
+        """
+        pass
+
+    @property
+    def integration_time_NPLC(self):
+        """
+        Integration time in power line cycles
+        """
+        pass
+
+    @integration_time_NPLC.setter
+    def integration_time_NPLC(self, value):
+        """
+        Integration time in power line cycles
+        """
+        pass
+
+    @property
+    def sense_range(self):
+        """
+        Measurement range None = Auto
+        """
+        pass
+
+    @sense_range.setter
+    def sense_range(self, value):
+        """
+        Measurement range
+        """
+        pass
+
+    @property
+    def sense_threshold(self):
+        """
+        Threshold to auto change range in %
+        """
+        pass
+
+    @sense_threshold.setter
+    def sense_threshold(self, value):
+        """
+        Threshold to auto change range in %
+        """
+        pass
+
+    @property
+    def sense_range_auto_llim(self):
+        """
+        Minimum range to switch to for auto-ranging
+        """
+        pass
+
+    @sense_range_auto_llim.setter
+    def sense_range_auto_llim(self, value):
+        """
+        Minimum range to switch to for auto-ranging
+        """
+        pass
+
+    @property
+    def sense_range_auto_ulim(self):
+        """
+        Maximum range to switch to for auto-ranging
+        """
+        pass
+
+    @sense_range_auto_ulim.setter
+    def sense_range_auto_ulim(self, value):
+        """
+        Maximum range to switch to for auto-ranging
+        """
+        pass
+
+    @property
+    def pulse(self):
+        """
+        bool Pulsed mode
+        """
+        pass
+
+    @pulse.setter
+    def pulse(self, value):
+        """
+        bool Pulsed mode
+        """
+        pass
+
+    @property
+    def trigger_source(self):
+        """
+        source to trigger off of
+        """
+        pass
+
+    @trigger_source.setter
+    def trigger_source(self, value):
+        """
+        source to trigger off of
+        """
+        pass
+
+    @property
+    def timer_interval(self):
+        """
+        interval in seconds between internal triggers
+        """
+        pass
+
+    @timer_interval.setter
+    def timer_interval(self):
+        """
+        interval in seconds between internal triggers
+        """
+        pass
+
+    @property
+    def trigger_transition_delay(self):
+        """
+        delay time for value transition in seconds
+        """
+        pass
+
+    @trigger_transition_delay(self).setter
+    def trigger_transition_delay(self, value):
+        """
+        delay time for value transition in seconds
+        """
+        pass
+
+    @property
+    def trigger_aquire_delay(self):
+        """
+        delay time for measurement start in seconds
+        """
+        pass
+
+    @trigger_aquire_delay.setter
+    def trigger_aquire_delay(self, value):
+        """
+        delay time for measurement start in seconds
+        """
+        pass
+
+    @property
+    def source_wait(self):
+        """
+        wait time for source in seconds
+        """
+        pass
+
+    @source_wait.setter
+    def source_wait(self, value):
+        """
+        wait time for source in seconds
+        """
+        pass
+
+    @property
+    def sense_wait(self):
+        """
+        wait time for sense in seconds
+        """
+        pass
+
+    @sense_wait.setter
+    def sense_wait(self, value):
+        """
+        wait time for sense in seconds
+        """
+        pass
+
+    @property
+    def pulse_delay(self):
+        """
+        delay time before pulse in seconds
+        """
+        pass
+
+    @pulse_delay.setter
+    def pulse_delay(self):
+        """
+        delay time before pulse in seconds
+        """
+        pass
+
+    @property
+    def pulse_width(self):
+        """
+        pulse width in seconds
+        """
+        pass
+
+    @pulse_width.setter
+    def pulse_width(self, value):
+        """
+        pulse width in seconds
+        """
+        pass
