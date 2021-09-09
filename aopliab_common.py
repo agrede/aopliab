@@ -9,10 +9,39 @@ from datetime import datetime, timezone
 
 
 def within_limits(value, limits):
+    """
+    checks if value contained by limits
+
+    Parameters
+    ----------
+    value : comparable type
+    values : list of value type
+        min, max value
+    Returns
+    -------
+    bool
+    """
     return (value is not None and limits[0] <= value and limits[1] >= value)
 
 
 def getInstr(rm, name, local_config='local.json'):
+    """
+    Get pyvisa object for instrument as specified in configuration file
+
+    Parameters
+    ----------
+    rm : pyvisa.highlevel.ResourceManager
+        pyvisa resource manager for session
+    name : str
+        Instrument name stored in `local_config`
+    local_config : str
+        Path to json configuration file
+
+    Returns
+    -------
+    pyvisa.resources.Resource
+       pyvisa resource object for the instrument
+    """
     cfg_file = open(local_config)
     cfg = json.load(cfg_file)
     cfg_file.close()
@@ -32,7 +61,8 @@ def getSer(name, local_config='local.json'):
     cfg_file = open(local_config)
     cfg = json.load(cfg_file)
     cfg_file.close()
-    return srl.Serial(cfg[name]['addr'], cfg[name]['conn_params']['baud_rate'], timeout=cfg[name]['conn_params']['timeout'])
+    return srl.Serial(cfg[name]['addr'], cfg[name]['conn_params']['baud_rate'],
+                      timeout=cfg[name]['conn_params']['timeout'])
 
 
 def parseConnParams(params):
@@ -54,16 +84,39 @@ def parseConnParams(params):
     return params
 
 
-def parseTermString(str):
+def parseTermString(strng):
+    """
+    look up table for terminal strings in local configuration file
+
+    Example
+    -------
+    >>> parseTermString("CR")
+    '\r'
+    """
     strs = {'NULL': '\0', 'CR': '\r', 'LF': '\n'}
-    m = re.match('<(\w+)>', str)
+    m = re.match('<(\w+)>', strng)
     if (m and m.group(1) in strs):
         return strs[m.group(1)]
     else:
-        return str
+        return strng
 
 
 def nearest_index(value, values, rndup):
+    """
+    get the closest index of value in values
+
+    Parameters
+    ----------
+    value : numeric
+        value to search
+    values : array_like
+        array of values to compare
+    rndup : bool
+        round up to nearest index
+    Returns
+    -------
+    value
+    """
     k = np.where(np.isfinite(values))[0]
     tvalues = values[k]
     if (value < tvalues[0]):
@@ -79,25 +132,58 @@ def nearest_index(value, values, rndup):
         idx = idx-1
     return k[idx]
 
+
 class DynamicPlot():
+    """
+    Plot/subplots which can points can be dynamically added
+    """
     ptype = "plot"
     dlstyle = "o-"
-    def __init__(self, ptype="plot", lstyle="o-" , fig = None, label = None, title = "title", xAxis = "x Axis", yAxis = "y Axis"):
+
+    def __init__(self, ptype="plot", lstyle="o-", fig=None, label=None,
+                 title="title", xAxis="x Axis", yAxis="y Axis",
+                 figsize=(6.4, 4.8)):
+        """
+        Parameters
+        ----------
+        ptype : {'plot', 'loglog', 'semilogy', 'semilogx', 'errorbar'}, optional
+            plot type to use
+        lstyle : str, optional
+            default line style to use
+        fig : int, optional
+            subplot number
+        title : str, optional
+        xAxis : str, optional
+            x axis label
+        yAxis : str, optional
+            y axis label
+        figsize : (float, float), optional
+            figure size in inches (100 dpi default)
+        """
         self.ptype = ptype
         self.dlstyle = lstyle
         self.lines = []
         # Set up plot
-        self.figure, self.ax = plt.subplots(figsize = (12,12), num = fig)
+        self.figure, self.ax = plt.subplots(figsize=figsize, num=fig)
         self.ax.set_title(title)
         self.xAxis = plt.xlabel(xAxis)
         self.yAxis = plt.ylabel(yAxis)
-        self.addnew(label = label)
+        self.addnew(label=label)
         if label:
             self.ax.legend()
-        #Autoscale on unknown axis and known lims on the other
+        # Autoscale on unknown axis and known lims on the other
         self.ax.set_autoscale_on(True)
 
     def addnew(self, ptype=None, lstyle=None, label=None):
+        """
+        add new line
+
+        Parameters
+        ----------
+        ptype : str, optional
+        lstyle : str, optional
+        label : str, optional
+        """
         if ptype is None:
             ptype = self.ptype
         if lstyle is None:
@@ -108,11 +194,11 @@ class DynamicPlot():
             tline, = self.ax.semilogy([], [], lstyle)
         elif (ptype == "semilogx"):
             tline, = self.ax.semilogx([], [], lstyle)
-        elif (ptype is "errorbar"):
+        elif (ptype == "errorbar"):
             if lstyle is None:
-                self.errorlstyle  = self.dlstyle
-            else : self.errorlstyle = lstyle
-            return
+                self.errorlstyle = self.dlstyle
+            else:
+                self.errorlstyle = lstyle
         else:
             tline, = self.ax.plot([], [], lstyle)
         if label:
@@ -120,35 +206,62 @@ class DynamicPlot():
             self.ax.legend()
         self.lines.append(tline)
 
-    def update(self, newx, newy, error_up = None, error_down= None): # error_up an error_down are positive values
+    def update(self, newx, newy, error_up=None, error_down=None):
+        """
+        Update plot with new values
+
+        Parameters
+        ----------
+        newx : float
+            x-value to add
+        newy : float
+            y-value to added
+        error_up : float, optional
+            positive valued upper error bar
+        error_down : float, optional
+            positive valued lower error bar
+        """
         k = len(self.lines) - 1
-        if (error_up and len(self.lines)==0): # trying to determine when we have new errorbar first case
-            if not error_down: error_down = error_up
-            tline, error_l, error_bar = self.ax.errorbar([newx], [newy], [[error_up], [error_down]], fmt=self.errorlstyle)
+        if (error_up and len(self.lines) == 0): # trying to determine when we have new errorbar first case
+            if not error_down:
+                error_down = error_up
+            tline, error_l, error_bar = self.ax.errorbar(
+                [newx], [newy], [[error_up], [error_down]],
+                fmt=self.errorlstyle)
             self.lines.append(tline)
             self.error_L.append(error_l)
             self.error_Bar.append(error_bar)
-        elif (error_up and len(self.error_Bar[-1])==0): # trying to determine when we have new errorbar second case
-            if not error_down: error_down = error_up
-            tline, error_l, error_bar = self.ax.errorbar([newx], [newy], [[error_up], [error_down]], fmt=self.errorlstyle)
+        elif (error_up and len(self.error_Bar[-1]) == 0): # trying to determine when we have new errorbar second case
+            if not error_down:
+                error_down = error_up
+            tline, error_l, error_bar = self.ax.errorbar(
+                [newx], [newy], [[error_up], [error_down]],
+                fmt=self.errorlstyle)
             self.lines.append(tline)
             self.error_L.append(error_l)
             self.error_Bar.append(error_bar)
         elif error_up:
-            if not error_down: error_down = error_up
+            if not error_down:
+                error_down = error_up
             self.lines[k].set_xdata(np.append(self.lines[k].get_xdata(), newx))
             self.lines[k].set_ydata(np.append(self.lines[k].get_ydata(), newy))
-            self.error_Bar[k][0].set_segments(np.append(self.error_Bar[k][0].get_segments(), [np.array([[newx, newy + error_up], [newx, newy - error_down]])] ,axis=0))
-            self.error_L[k][0].set_ydata(np.append(self.error_L[k][0].get_ydata(), newy - error_down))
-            self.error_L[k][1].set_ydata(np.append(self.error_L[k][1].get_ydata(), error_up + newy))
-            self.error_L[k][0].set_xdata(np.append(self.error_L[k][0].get_xdata(), newx))
-            self.error_L[k][1].set_xdata(np.append(self.error_L[k][1].get_xdata(), newx))
-        else:
-	 #Update data (with the new _and_ the old points)
-        self.lines[k].set_xdata(np.append(self.lines[k].get_xdata(), newx))
-        self.lines[k].set_ydata(np.append(self.lines[k].get_ydata(), newy))
-        #Need both of these in order to rescale
-
+            self.error_Bar[k][0].set_segments(
+                np.append(self.error_Bar[k][0].get_segments(),
+                          [np.array([[newx, newy + error_up],
+                                     [newx, newy - error_down]])],
+                          axis=0))
+            self.error_L[k][0].set_ydata(
+                np.append(self.error_L[k][0].get_ydata(), newy - error_down))
+            self.error_L[k][1].set_ydata(
+                np.append(self.error_L[k][1].get_ydata(), error_up + newy))
+            self.error_L[k][0].set_xdata(
+                np.append(self.error_L[k][0].get_xdata(), newx))
+            self.error_L[k][1].set_xdata(
+                np.append(self.error_L[k][1].get_xdata(), newx))
+        else:        # Update data (with the new *and* the old points)
+            self.lines[k].set_xdata(np.append(self.lines[k].get_xdata(), newx))
+            self.lines[k].set_ydata(np.append(self.lines[k].get_ydata(), newy))
+        # Need both of these in order to rescale
         self.ax.relim()
         self.ax.autoscale_view()
         # We need to draw *and* flush
@@ -166,17 +279,59 @@ class DynamicPlot():
         self.figure.canvas.draw()
         self.figure.canvas.flush_events()
 
+
 def get_limits(inst, query):
+    """
+    Queries minimum and maximum values from instrument
+
+    Parameters
+    ----------
+    instr : pyvisa.resource.Resource
+        instrument interface to query from
+    query : str
+        SCPI value to query
+
+    Returns
+    -------
+    [float, float]
+        minimum, maximum value
+    """
     return [
         inst.query_ascii_values(query+"? MIN")[0],
         inst.query_ascii_values(query+"? MAX")[0]]
 
 
 def get_bool(inst, query):
+    """
+    Queries boolean values from instrument
+
+    Parameters
+    ----------
+    instr : pyvisa.resource.Resource
+        instrument interface to query from
+    query : str
+        SCPI value to query
+
+    Returns
+    -------
+    bool
+    """
     return (inst.query_ascii_values(query+"?", converter=u'd')[0] == 1)
 
 
 def set_bool(inst, query, value):
+    """
+    Sets boolean values from instrument
+
+    Parameters
+    ----------
+    instr : pyvisa.resource.Resource
+        instrument interface to query from
+    query : str
+        SCPI value to use
+    value : bool
+        value to write
+    """
     if (value):
         inst.write(query+" 1")
     else:
@@ -218,6 +373,25 @@ def twos_complement(n, nbits=32):
 
 
 def save_path(user, subfolder=None, utc=False, local_config='local.json'):
+    """
+    Create current date directory in user's sub-folder
+
+    Parameters
+    ----------
+    user : str
+        user sub-folder
+    subfolder : str, optional
+        sub-folder within directory
+    utc : bool, optional
+        use utc instead of local-time
+    local_config : str, optional
+        path to configuration file
+
+    Returns
+    -------
+    svepth : str
+        string for directory created
+    """
     config = json_load(local_config)
     svepth = config['data_path']
     if len(str(user)):
