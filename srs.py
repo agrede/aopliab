@@ -525,6 +525,9 @@ class DS345():
     def cls(self):
         self.inst.write("*CLS")
 
+    def triger(self):
+        self.inst.write("*TRG")
+        
     @property
     def highz(self):
         return (self._highz > 1.)
@@ -543,11 +546,11 @@ class DS345():
     @func.setter
     def func(self, value):
         if within_limits(int(value), [0, 5]):
-            self.inst.write("FUNC %d", value)
+            self.inst.write("FUNC %d" % value)
 
     @property
     def freq(self):
-        return self.query_ascii_values("FREQ?")[0]
+        return self.inst.query_ascii_values("FREQ?")[0]
 
     @freq.setter
     def freq(self, value):

@@ -89,7 +89,11 @@ class K2400():
                             self.inst.query_ascii_values(
                                                          "CURR:PROT:LEV? DEF"
                                                          )[0])
-
+    
+    @property
+    def beep(self):
+        return self.inst.write("SYST:BEEP %f, %f" % (1000, 1.0))
+    
     @property
     def voltage_limit(self):
         return self.inst.query_ascii_values("VOLT:PROT:LEV?")[0]

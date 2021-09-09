@@ -78,19 +78,18 @@ def nearest_index(value, values, rndup):
     return k[idx]
 
 class DynamicPlot():
-    lines = []
-    error_L = []
-    error_Bar = []
     ptype = "plot"
     dlstyle = "o-"
-
-    def __init__(self, ptype="plot", lstyle="o-", fig=None, label=None):
+    def __init__(self, ptype="plot", lstyle="o-" , fig = None, label = None, title = "title", xAxis = "x Axis", yAxis = "y Axis"):
         self.ptype = ptype
         self.dlstyle = lstyle
         self.lines = []
         # Set up plot
-        self.figure, self.ax = plt.subplots(num=fig)
-        #self.addnew(label = label)
+        self.figure, self.ax = plt.subplots(figsize = (12,12), num = fig)
+        self.ax.set_title(title)
+        self.xAxis = plt.xlabel(xAxis)
+        self.yAxis = plt.ylabel(yAxis)
+        self.addnew(label = label)
         if label:
             self.ax.legend()
         #Autoscale on unknown axis and known lims on the other
@@ -203,3 +202,14 @@ def json_load(path):
     tmp = json.load(fp)
     fp.close()
     return tmp
+
+
+def twos_complement(n, nbits=32):
+    """
+    2's complement and its inverse
+    """
+    if n < 0:
+        n += (1 << nbits)
+    elif n & (1 << (nbits - 1)) != 0:
+        n -= (1 << nbits)
+    return n
