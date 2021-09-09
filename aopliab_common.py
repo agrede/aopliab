@@ -4,6 +4,8 @@ import json
 import pyvisa
 import re
 import serial as srl
+import os
+from datetime import datetime, timezone
 
 
 def within_limits(value, limits):
@@ -71,7 +73,7 @@ def nearest_index(value, values, rndup):
     try:
         idx = np.where(value <= tvalues)[0][0]
     except IndexError:
-        print(f"nearest_index({value}, {values})")
+        #print("nearest_index({value}, {values})".format(value=value, values=values))
         raise IndexError
     if (not rndup and value < tvalues[idx]):
         idx = idx-1
@@ -213,3 +215,23 @@ def twos_complement(n, nbits=32):
     elif n & (1 << (nbits - 1)) != 0:
         n -= (1 << nbits)
     return n
+
+
+def save_path(user, subfolder=None, utc=False, local_config='local.json'):
+    config = json_load(local_config)
+    svepth = config['data_path']
+    if len(str(user)):
+        svepth += str(user)
+    else:
+        svepth += "None"
+    svepth += "/"
+    if utc:
+        dt = datetime.now(timezone.utc)
+    else:
+        dt = datetime.now()
+    svepth += dt.isoformat()[:10] + "/"
+    if subfolder is not None and len(str(subfolder)) > 0:
+        svepth += str(subfolder) + "/"
+    if not os.path.exists(svepth):
+        os.makedirs(svepth)
+    return svepth

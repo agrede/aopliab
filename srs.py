@@ -524,6 +524,9 @@ class DS345():
 
     def cls(self):
         self.inst.write("*CLS")
+        
+    def triger(self):
+        self.inst.write("*TRG")
 
     def triger(self):
         self.inst.write("*TRG")

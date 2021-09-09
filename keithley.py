@@ -579,3 +579,183 @@ class K6430():
             return self.inst.query_ascii_values("FETCH?")
         else:
             return None
+
+
+class K237():
+    """
+    PyVISA wrapper for K237 High Voltage SMU
+    """
+
+    def __init__(self, inst):
+        self.inst = inst
+        cfg = json_load("configs/keithley.json")
+        self.config = cfg['K237']
+        self.measure_parameters()
+        self.machine_status()
+        
+        
+    def machine_status(self):
+        """
+        Query Status Variables
+
+        Returns
+        -------
+        bool
+            success
+        """
+        tmp = self.inst.query("U3X")
+        # 0000000000111111111122222222223333
+        # 0123456789012345678901234567890123
+        # MSTG05,0,0K0M000,0N0R1T4,0,0,0V1Y0
+        if tmp[:3] != "MST":
+            return False
+        self._sqrMask = int(tmp[13:16])
+        self._output_enable = tmp[19] == '1'
+        self._trigger = tmp[21] == '1'
+        self._trigger_source = int(tmp[23])
+        self._trigger_in = int(tmp[25])
+        self._trigger_out = int(tmp[27])
+        self._trigger_out_sweep_end = tmp[29] == '1'
+        self._high_voltage_enabled = tmp[31] == '1'
+        return True
+        
+    
+    def measure_parameters(self):
+        tmp = self.inst.query("U4X")
+        # 000000000011111111112
+        # 012345678901234567890
+        # IMPL,05F0,0O0P0S0W1Z0
+        self._source_voltage = tmp[8] == '0'
+        self._sweep_mode = tmp[10] == '1'
+        self._remote_sense = tmp[12] == '1'
+        if self._source_voltage:
+            self._current_compliance_range = self.config['current_ranges'][int(tmp[5:7])]
+        else:
+            self._voltage_compliance_range = self.config['voltage_ranges'][int(tmp[5:7])]
+        self._filter_samples = self.config['filter_samples'][int(tmp[14])]
+        self._integration_time = self.config['integration_times'][int(tmp[16])]
+        self._default_delay = tmp[18] == '1'
+        self._suppression = tmp[20] == '1'
+        
+    @property
+    def measure(self):
+        if self._sweep_mode:
+            return None, None
+        tmp = self.inst.read()
+        v = None
+        i = None
+        for val in tmp.split(","):
+            if val[0] == 'N':
+                if val[4] == 'V':
+                    v = float(val[5:])
+                elif val[4] == 'I':
+                    i = float(val[5:])
+        return np.array([v, i])
+    
+    @property
+    def sweep_mode(self):
+        if self.measure_parameters():
+            return self._sweep_mode
+        else:
+            return None
+        
+    @sweep_mode.setter
+    def sweep_mode(self, value):
+        if value:
+            self.inst.write("G15,3,2X")
+            if self._source_voltage:
+                self.inst.write("F0,1X")
+            else:
+                self.inst.write("F1,1X")
+            self._sweep_mode = True
+        else:
+            self.inst.write("G5,0,0X")
+            if self._source_voltage:
+                self.inst.write("F0,0X")
+            else:
+                self.inst.write("F1,0X")
+            self._sweep_mode = False
+    
+    @property
+    def source_voltage(self):
+        if self.measure_parameters():
+            return self._sweep_mode
+        else:
+            return None
+    
+    @source_voltage.setter
+    def source_voltage(self, value):
+        if value:
+            if self._sweep_mode:
+                self.inst.write("F0,1X")
+            else:
+                self.inst.write("F0,0X")
+            self._source_voltage = True
+        else:
+            if self._sweep_mode:
+                self.inst.write("F1,1X")
+            else:
+                self.inst.write("F1,0X")
+            self._source_voltage = False
+            
+    @property
+    def high_voltage_enabled(self):
+        if self.machine_status():
+            return self._high_voltage_enabled
+        else:
+            return None
+        
+    @high_voltage_enabled.setter
+    def high_voltage_enabled(self, value):
+        if value:
+            self.inst.write("V1X")
+            self._high_voltage_enabled = True
+        else:
+            self.inst.write("V0X")
+            self._high_voltage_enabled = False
+        
+    @property
+    def bias(self):
+        if self._sweep_mode:
+            return None
+        v, i = self.measure
+        if self._source_voltage:
+            return v
+        else:
+            return i
+        
+    @bias.setter
+    def bias(self, value):
+        if self._source_voltage and within_limits(value, [-1100., 1100.]):
+            self.inst.write("B{:0.4E},0,0X".format(value))
+        elif not self._source_voltage and within_limits(value, [-100e-3, 100e-3]):
+            self.inst.write("B{:04E},0,0X")
+    
+            
+    @property
+    def compliance(self):
+        tmp = self.inst.query("U5X")
+        return float(tmp[3:])
+    
+    @compliance.setter
+    def compliance(self, value):
+        if self._source_voltage and within_limits(value, [1e-12, 100e-3]):
+            self.inst.write("L{:0.4E},0".format(value))
+        elif not self._source_voltage and within_limits(value, [1e-3, 1100.]):
+            self.inst.write("L{:0.4E},0".format(value))
+        
+    @property
+    def output_enable(self):
+        if self.machine_status():
+            return self._output_enable
+        else:
+            return None
+        
+    @output_enable.setter
+    def output_enable(self, value):
+        if value:
+            self.inst.write("N1X")
+            self._output_enable = True
+        else:
+            self.inst.write("N0X")
+            self._output_enable = False

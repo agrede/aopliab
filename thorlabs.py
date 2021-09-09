@@ -260,7 +260,7 @@ class FW102C():
     def query(self, value):
         tmp = self.inst.query(value)
         return float(self._qrx.match(tmp).group(1))
-        
+
     def write(self, value):
         self.inst.write(value)
         self.inst.read_raw()
@@ -345,14 +345,14 @@ class FW102C():
         return np.nan
 
 
-class ELL20_translationStage():
+class ELL_translation():
     """
     PyVisa wrapperfor linear stepper translation stage
     """
     _num = 0
     _res = 1024e3
     _limits = np.array([0.0, 0.0])
-    
+
     def __init__(self, inst, number=0):
         self.inst = inst
         self._num = 0
@@ -363,20 +363,20 @@ class ELL20_translationStage():
 
     def close(self):
         self.inst.close()
-        
+
     def write(self, value):
         self.inst.write(value)
         self.inst.read_raw()
-        
+
     def query(self, command):
         return self.inst.query("{:X}{:s}".format(self._num, command))
-        
+
     def query_2scomplement(self, command, nbits=32):
         self.inst.clear()
         tmp = self.inst.query("{:X}{:s}".format(self._num, command))
         val = int(tmp[3:], 16)
         return twos_complement(val, nbits)
-    
+
     def set_2scomplement(self, command, val, nbits=32):
         self.inst.clear()
         return self.inst.query(
@@ -385,72 +385,36 @@ class ELL20_translationStage():
                         command,
                         val=twos_complement(val, nbits),
                         width=nbits//4))
-        
+
     def home(self):
         return self.query("ho")
-        
+
     @property
     def position(self):
         """
         position of stage in meters
         """
         return self.query_2scomplement("gp")/self._res
-    
+
     @position.setter
     def position(self, value):
         if within_limits(value, self._limits):
             self.set_2scomplement("ma", int(value*self._res))
-        
+
     @property
     def jog_step(self):
         """
         jog step size in meters
         """
         return self.query_2scomplement("gj")/self._res
-    
+
     @jog_step.setter
     def jog_step(self, value):
         if within_limits(value, self._limits):
             self.set_2scomplement("sj", int(value*self._res))
-            
+
     def forward(self):
         return self.query("fw")
-        
+
     def backward(self):
         return self.query("bw")
-        
-    @property
-    def _DEVGET_INFORMATION (self):
-        return self.inst.query("0in")
-        
-    @property
-    def _HOSTSET_JOGSTEPSIZE (self):
-        self.write("0sj00000800") 
-    
-    @_HOSTSET_JOGSTEPSIZE.setter
-    def _HOSTSET_JOGSTEPSIZE (self, value):
-        self.write("0sj00000800")
-# =============================================================================
-#         self.write("Asj00000800")  
-#       see manual, but 2048 pulses per mm, so 00000800 moves 1mm step sizes
-# =============================================================================
-    
-    @property
-    def _DEVGET_JOGSTEPSIZE (self):
-        return self.inst.query("0gj")
-    
-    @property
-    def _HOST_FORWARD(self):
-        self.write("0fw")
-    
-    @property
-    def _HOST_BACKWARD(self):
-        self.write("0fw")
-        
-    @property
-    def _HOSTREQ_HOME(self):
-        self.write("0ho0")
-    
-    @property
-    def _HOST_GETPOSITION(self):
-        return self.inst.query("0gp")
