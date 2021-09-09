@@ -49,8 +49,10 @@ class PreAmp():
             curlev = -1.
         nidx = self.sensitivity_index - 1
         if nidx < 0 or self.max_output < curlev/self.senss[nidx]:
+            #print(f"nidx {nidx} curlev/self.senss[nidx] {curlev/self.senss[nidx]} self.max_output {self.max_output}")
             return np.nan
         if self.freq_cutoff(self.senss[nidx]) <= self.current_freq:
+            #print(f"freq cutoff")
             return np.nan
         return self.senss[nidx]
 
@@ -287,7 +289,7 @@ class LockInAmplifier():
                     js[k] = js[k]*self.preamps[k].sensitivity/cps
                     cps = self.preamps[k].sensitivity
                     change = True
-                elif m <= 0.3*js[k]:
+                elif m <= 0.05*js[k]:
                     nps = self.preamps[k].inc_sensitivity
                     if not np.isnan(nps):
                         self.preamps[k].sensitivity = nps
@@ -296,6 +298,7 @@ class LockInAmplifier():
                     sleep(0.1)
                     if self.preamps[k].overload:
                         print("GAHH FUCK")
+                        print(f"adc() {self.preamps[k].adc()}, max output {self.preamps[k].max_output}, tia.sens {cps}")
                         self.preamps[k].fix_overload()
                         m = m*self.preamps[k].sensitivity/cps
                         js[k] = js[k]*self.preamps[k].sensitivity/cps

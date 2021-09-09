@@ -1,4 +1,4 @@
-from aopliab_common import within_limits, json_load
+from aopliab_common import within_limits, json_load, twos_complement
 import json
 import numpy as np
 import re
@@ -260,7 +260,7 @@ class FW102C():
     def query(self, value):
         tmp = self.inst.query(value)
         return float(self._qrx.match(tmp).group(1))
-
+        
     def write(self, value):
         self.inst.write(value)
         self.inst.read_raw()
@@ -343,3 +343,78 @@ class FW102C():
                     slp = np.diff(fltr[1:3])/np.diff(fltr[3:])
                     return (slp*(wavelength-fltr[3])+fltr[1])
         return np.nan
+
+
+class ELL_translation():
+    """
+    PyVisa wrapperfor linear stepper translation stage
+    """
+    _num = 0
+    _res = 1024e3
+    _limits = np.array([0.0, 0.0])
+    
+    def __init__(self, inst, number=0):
+        self.inst = inst
+        self._num = 0
+        self.inst.clear()
+        info = self.inst.query("{:X}in".format(self._num))
+        self._res = 1e3*int(info[25:], 16)
+        self._limits[1] = 1e-3*int(info[21:25], 16)
+
+    def close(self):
+        self.inst.close()
+        
+    def write(self, value):
+        self.inst.write(value)
+        self.inst.read_raw()
+        
+    def query(self, command):
+        return self.inst.query("{:X}{:s}".format(self._num, command))
+        
+    def query_2scomplement(self, command, nbits=32):
+        self.inst.clear()
+        tmp = self.inst.query("{:X}{:s}".format(self._num, command))
+        val = int(tmp[3:], 16)
+        return twos_complement(val, nbits)
+    
+    def set_2scomplement(self, command, val, nbits=32):
+        self.inst.clear()
+        return self.inst.query(
+                "{:X}{:s}{val:0{width}X}".format(
+                        self._num,
+                        command,
+                        val=twos_complement(val, nbits),
+                        width=nbits//4))
+        
+    def home(self):
+        return self.query("ho")
+        
+    @property
+    def position(self):
+        """
+        position of stage in meters
+        """
+        return self.query_2scomplement("gp")/self._res
+    
+    @position.setter
+    def position(self, value):
+        if within_limits(value, self._limits):
+            self.set_2scomplement("ma", int(value*self._res))
+        
+    @property
+    def jog_step(self):
+        """
+        jog step size in meters
+        """
+        return self.query_2scomplement("gj")/self._res
+    
+    @jog_step.setter
+    def jog_step(self, value):
+        if within_limits(value, self._limits):
+            self.set_2scomplement("sj", int(value*self._res))
+            
+    def forward(self):
+        return self.query("fw")
+        
+    def backward(self):
+        return self.query("bw")

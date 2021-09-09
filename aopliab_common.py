@@ -1,8 +1,11 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import json
-import visa
+import pyvisa
 import re
+import serial as srl
+import os
+from datetime import datetime, timezone
 
 
 def within_limits(value, limits):
@@ -29,17 +32,17 @@ def getSer(name, local_config='local.json'):
     cfg = json.load(cfg_file)
     cfg_file.close()
     
-    return srl.Serial(cfg[name]['port'], cfg[name]['baud_rate'], timeout=cfg[name]['timeout'])
+    return srl.Serial(cfg[name]['addr'], cfg[name]['conn_params']['baud_rate'], timeout=cfg[name]['conn_params']['timeout'])
 
     
 def parseConnParams(params):
     if ('stop_bits' in params):
         if (params['stop_bits'] == 1):
-            params['stop_bits'] = visa.constants.StopBits.one
+            params['stop_bits'] = pyvisa.constants.StopBits.one
         elif (params['stop_bits'] == 1.5):
-            params['stop_bits'] = visa.constants.StopBits.one_and_a_half
+            params['stop_bits'] = pyvisa.constants.StopBits.one_and_a_half
         elif (params['stop_bits'] == 2):
-            params['stop_bits'] = visa.constants.StopBits.two
+            params['stop_bits'] = pyvisa.constants.StopBits.two
         else:
             del(params['stop_bits'])
     if ('read_termination' in params):
@@ -67,40 +70,49 @@ def nearest_index(value, values, rndup):
         value = tvalues[0]
     elif(value > tvalues[-1]):
         value = tvalues[-1]
-    idx = np.where(value <= tvalues)[0][0]
+    try:
+        idx = np.where(value <= tvalues)[0][0]
+    except IndexError:
+        #print("nearest_index({value}, {values})".format(value=value, values=values))
+        raise IndexError
     if (not rndup and value < tvalues[idx]):
         idx = idx-1
     return k[idx]
 
-
 class DynamicPlot():
-
-    lines = []
     ptype = "plot"
     dlstyle = "o-"
-
-    def __init__(self, ptype="plot", lstyle="o-"):
+    def __init__(self, ptype="plot", lstyle="o-" , fig = None, label = None, title = "title", xAxis = "x Axis", yAxis = "y Axis"):
         self.ptype = ptype
         self.dlstyle = lstyle
+        self.lines = []
         # Set up plot
-        self.figure, self.ax = plt.subplots()
-        self.addnew()
+        self.figure, self.ax = plt.subplots(figsize = (12,12), num = fig)
+        self.ax.set_title(title)
+        self.xAxis = plt.xlabel(xAxis)
+        self.yAxis = plt.ylabel(yAxis) 
+        self.addnew(label = label)
+        if label:
+            self.ax.legend()
         #Autoscale on unknown axis and known lims on the other
         self.ax.set_autoscale_on(True)
 
-    def addnew(self, ptype=None, lstyle=None):
+    def addnew(self, ptype=None, lstyle=None, label = None):
         if ptype is None:
             ptype = self.ptype
         if lstyle is None:
-            lstyle = self.dlstyle
-        if (ptype is "loglog"):
+            lstyle = self.dlstyle   
+        if (ptype == "loglog"):
             tline, = self.ax.loglog([], [], lstyle)
-        elif (ptype is "semilogy"):
+        elif (ptype == "semilogy"):
             tline, = self.ax.semilogy([], [], lstyle)
-        elif (ptype is "semilogx"):
+        elif (ptype == "semilogx"):
             tline, = self.ax.semilogx([], [], lstyle)
         else:
             tline, = self.ax.plot([], [], lstyle)
+        if label:
+            tline.set_label(label)
+            self.ax.legend()
         self.lines.append(tline)
 
     def update(self, newx, newy):
@@ -165,3 +177,34 @@ def json_load(path):
     tmp = json.load(fp)
     fp.close()
     return tmp
+
+
+def twos_complement(n, nbits=32):
+    """
+    2's complement and its inverse
+    """
+    if n < 0:
+        n += (1 << nbits)
+    elif n & (1 << (nbits - 1)) != 0:
+        n -= (1 << nbits)
+    return n
+
+
+def save_path(user, subfolder=None, utc=False, local_config='local.json'):
+    config = json_load(local_config)
+    svepth = config['data_path']
+    if len(str(user)):
+        svepth += str(user)
+    else:
+        svepth += "None"
+    svepth += "/"
+    if utc:
+        dt = datetime.now(timezone.utc)
+    else:
+        dt = datetime.now()
+    svepth += dt.isoformat()[:10] + "/"
+    if subfolder is not None and len(str(subfolder)) > 0:
+        svepth += str(subfolder) + "/"
+    if not os.path.exists(svepth):
+        os.makedirs(svepth)
+    return svepth

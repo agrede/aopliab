@@ -169,7 +169,7 @@ class SR7230(LockInAmplifier):
             elif k == 0:
                 self.write("SEN %d" % idx)
         else:
-            idx = nearest_index(v, self.senss[:, 0], True)+3
+            idx = nearest_index(value, self.senss[:, 0], True)+3
             self.write("SEN %d" % idx)
 
     def run_auto_sensitivity(self):
@@ -187,7 +187,7 @@ class SR7230(LockInAmplifier):
     def ac_gain(self, value):
         if (self.ac_auto_gain):
             self.ac_auto_gain = False
-        idx = nearest_index(value, self.gains)
+        idx = nearest_index(value, self.gains, True)
         self.write("ACGAIN %d" % idx)
 
     @property

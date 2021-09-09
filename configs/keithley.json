@@ -2,5 +2,20 @@
     "K6430": {
         "smodes": ["NORM", "ZERO", "GUAR"],
         "functions": ["VOLT", "CURR", "RES"]
+    },
+    "K237": {
+        "voltage_ranges": [
+            -1, 1.1, 11, 110, 1100, 
+            null, null, null,  null, null,
+            null
+        ],
+        "current_ranges": [
+            -1, 1e-9, 1e-8, 1e-7, 1e-6, 
+            1e-5, 1e-4, 1e-3, 1e-2, 1e-1,
+            null
+        ],
+        "delay_range": [0, 65000],
+        "integration_times": [416e-6, 4e-3, 16.67e-3, 20e-3],
+        "filter_samples": [1, 2, 4, 8, 16, 32]        
     }
 }
