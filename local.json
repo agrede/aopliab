@@ -2,7 +2,7 @@
     "Monochromator": {
         "manufacturer": "ARC",
         "model": "SpecPro",
-        "com": 2,
+        "com": 70,
         "dll_path": "C:\\Program Files (x86)\\Princeton Instruments\\MonoControl\\ARC_SpectraPro.dll",
         "non_visa": true
     },
@@ -45,12 +45,21 @@
     "SMU": {
         "manufacturer": "Keithely",
         "model": "K2400",
-        "addr": "GPIB0::30::INSTR"
+        "addr": "GPIB0::22::INSTR"
     },
-    "PulSMU": {
+	"SMU2": {
         "manufacturer": "Keithely",
         "model": "K2400",
-        "addr": "GPIB0::23::INSTR"
+        "addr": "GPIB0::21::INSTR"
+    },
+    "PulSMU": {
+        "manufacturer": "Keysight",
+        "model": "B2900A",
+        "addr": "USB0::0x0957::0x8E18::MY51141103::INSTR",
+        "conn_params": {
+            "read_termination": ["<LF>"],
+            "write_termination": ["<LF>"]
+        }
     },
     "SPA": {
         "manufacturer": "HP",
@@ -86,6 +95,19 @@
             "stop_bits": 1,
             "write_termination": ["<CR>"],
             "read_termination": ["<CR>", "> "]
+        }
+    },
+    "SC": {
+        "manufacturer": "Fianium",
+        "model": "WhiteLase",
+        "addr": "ASRL62::INSTR",
+        "conn_params": {
+            "timeout": 6000,
+            "baud_rate": 19200,
+            "data_bits": 8,
+            "stop_bits": 1,
+            "write_termination": ["<CR>"],
+            "read_termination": ["<CR>"]
         }
     },
     "FilterWheel": {
@@ -139,7 +161,44 @@
     "ArdMeg": {
         "manufacturer": "ArdMeg",
         "model": "ArdMeg",
-        "addr": "ASRL17::INSTR",
+        "addr": "ASRL32::INSTR",
+        "conn_params": {
+            "baud_rate": 9600,
+            "data_bits": 8,
+            "stop_bits": 1,
+            "write_termination": ["<LF>"],
+            "read_termination": ["<CR>", "<LF>"]
+        }
+    },
+    "ErrCells": {
+        "manufacturer": "Teensy",
+        "model": "ErrCells",
+        "addr": "ASRL40::INSTR",
+        "conn_params": {
+            "timeout": 6000,
+            "baud_rate": 9600,
+            "data_bits": 8,
+            "stop_bits": 1,
+            "write_termination": ["<LF>"],
+            "read_termination": ["<CR>", "<LF>"]
+        }
+    },
+    "CapPos": {
+        "manufacturer": "Ardunino",
+        "model": "Uno",
+        "addr": "ASRL50::INSTR",
+        "conn_params": {
+            "baud_rate": 9600,
+            "data_bits": 8,
+            "stop_bits": 1,
+            "write_termination": ["<LF>"],
+            "read_termination": ["<CR>", "<LF>"]
+        }
+    },
+    "CapPos2": {
+        "manufacturer": "Ardunino",
+        "model": "Uno",
+        "addr": "ASRL26::INSTR",
         "conn_params": {
             "baud_rate": 9600,
             "data_bits": 8,
@@ -152,6 +211,18 @@
         "manufacturer": "ArdMeg",
         "model": "Tinsy",
         "addr": "ASRL19::INSTR",
+        "conn_params": {
+            "baud_rate": 9600,
+            "data_bits": 8,
+            "stop_bits": 1,
+            "write_termination": ["<LF>"],
+            "read_termination": ["<CR>", "<LF>"]
+        }
+    },
+    "SwtchMtrx": {
+        "manufacturer": "Arduino",
+        "model": "Uno",
+        "addr": "ASRL50::INSTR",
         "conn_params": {
             "baud_rate": 9600,
             "data_bits": 8,
@@ -185,10 +256,22 @@
             "read_termination": ["<CR>"]
         }
     },
+    "SC2": {
+    "manufacturer": "fienium",
+    "model": "SC4X0",
+    "addr": "ASRL62::INSTR",
+    "conn_params": {
+        "baud_rate": 19200,
+        "data_bits": 8,
+        "stop_bits": 1,
+        "write_termination": ["<CR>"],
+        "read_termination": ["<CR>"]
+    }
+    },
     "OBIS": {
         "manufacturer": "Coherent",
         "model": "OBIS mini-controller",
-        "addr": "ASRL21::INSTR",
+        "addr": "ASRL45::INSTR",
         "conn_params": {
             "write_termination": ["<CR>"],
             "read_termination": ["<CR>", "<LF>"]

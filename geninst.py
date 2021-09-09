@@ -49,8 +49,10 @@ class PreAmp():
             curlev = -1.
         nidx = self.sensitivity_index - 1
         if nidx < 0 or self.max_output < curlev/self.senss[nidx]:
+            #print(f"nidx {nidx} curlev/self.senss[nidx] {curlev/self.senss[nidx]} self.max_output {self.max_output}")
             return np.nan
         if self.freq_cutoff(self.senss[nidx]) <= self.current_freq:
+            #print(f"freq cutoff")
             return np.nan
         return self.senss[nidx]
 
@@ -112,6 +114,7 @@ class LockInAmplifier():
     slopes = np.array([])
     noise_base = np.array([])
     noise_ratio = np.array([])
+    noise_slope = np.array([])
     tol_maxsettle = 20.
     tol_rel = np.array([])
     tol_abs = np.array([])
@@ -119,6 +122,7 @@ class LockInAmplifier():
     auto_scale = False
     auto_dewll = False
     auto_phase = False
+    auto_wait = False
     auto_phase_tc = 5.
     last_mags = np.array([])
     last_meas = np.array([])
@@ -258,13 +262,19 @@ class LockInAmplifier():
             self.last_mags = self.cmags
         scaled = False
         dwelled = False
+        waited = False
         while ((self.auto_scale and not scaled) or
-               (self.auto_dewll and not dwelled)):
+               (self.auto_dewll and not dwelled) or 
+               (self.auto_wait and not waited)):
             if self.auto_scale:
-                scaled = not self.update_scale(self.last_mags)
+                tmags = self.last_mags
+                tnse = 2.*self.approx_noise(tmags)*np.sqrt(self.enbw)
+                scaled = not self.update_scale(np.vstack((tmags, tnse)).max(axis=0))
             if self.auto_dwell:
                 dwelled = not self.update_timeconstant(self.last_mags)
+            if self.auto_dewll or self.auto_wait:
                 sleep(self.wait_time)
+                waited = True
             tmp = self.cmags
             if self.auto_scale and np.any(np.abs(1.-tmp/self.last_mags) > 0.5):
                 scaled = False
@@ -287,7 +297,7 @@ class LockInAmplifier():
                     js[k] = js[k]*self.preamps[k].sensitivity/cps
                     cps = self.preamps[k].sensitivity
                     change = True
-                elif m <= 0.3*js[k]:
+                elif m <= 0.05*js[k]:
                     nps = self.preamps[k].inc_sensitivity
                     if not np.isnan(nps):
                         self.preamps[k].sensitivity = nps
@@ -296,6 +306,7 @@ class LockInAmplifier():
                     sleep(0.1)
                     if self.preamps[k].overload:
                         print("GAHH FUCK")
+                        print(f"adc() {self.preamps[k].adc()}, max output {self.preamps[k].max_output}, tia.sens {cps}")
                         self.preamps[k].fix_overload()
                         m = m*self.preamps[k].sensitivity/cps
                         js[k] = js[k]*self.preamps[k].sensitivity/cps
@@ -397,6 +408,378 @@ class LockInAmplifier():
 
     def approx_noise(self, mags):
         """Noise approximation based on slope and baseline"""
-        return (np.vstack((
-            mags*self.noise_ratio,
-            self.noise_base)).max(axis=0))
+        if self.noise_slope.size > 0:
+            mags = np.power(mags, self.noise_slope)
+        if self.noise_ratio.size > 0:
+            mags = self.noise_ratio*mags
+        if self.noise_base.size > 0:
+            mags = np.sqrt(np.power(mags, 2)+np.power(self.noise_base, 2))
+        return mags
+
+
+class ParameterAnalyzer():
+    _use_channels = []
+    def __init__(self, inst):
+        pass
+
+    @property
+    def use_channels(self):
+        pass
+
+    @use_channels.setter
+    def use_channels(self, value):
+        pass
+
+
+class SMU():
+
+    use_ascii = True
+
+    def __init__(self, inst=None, parent=None, number=None):
+        pass
+
+    @property
+    def output(self):
+        """
+        Output state of the SMU (True = on)
+        """
+        pass
+
+    @output.setter
+    def output(self, value):
+        """
+        Set the output state of the SMU (True = on)
+        """
+        pass
+
+    @property
+    def source_range(self):
+        """
+        Source range (None=Auto)
+        """
+
+    @source_range.setter
+    def source_range(self, value):
+        pass
+
+    @property
+    def source_voltage(self):
+        """
+        Source in voltage mode (True=Voltage, False=Current)
+        """
+        pass
+
+    @source_voltage.setter
+    def source_voltage(self, value):
+        """
+        Source in voltage mode (True=Voltage, False=Current)
+        """
+        pass
+
+    @property
+    def source_mode(self):
+        """
+        Source mode ('LINear' / 'LOGarithmic' / 'LIST' / 'FIXed')
+        """
+        pass
+
+    @source_mode.setter
+    def source_mode(self, value):
+        """
+        Source mode ('LINear' / 'LOGarithmic' / 'LIST' / 'FIXed')
+        """
+        pass
+
+    @property
+    def sweep_up(self):
+        """
+        bool sweep up == True
+        """
+        pass
+
+    @sweep_up.setter
+    def sweep_up(self):
+        """
+        bool sweep up == True
+        """
+        pass
+
+    @property
+    def sweep_points(self):
+        """
+        int number of points
+        """
+        pass
+
+    @sweep_points.setter
+    def sweep_points(self, value):
+        """
+        int number of points
+        """
+        pass
+
+    @property
+    def sweep_bidirectional(self):
+        """
+        bool bi-directional sweep (double)
+        """
+        pass
+
+    @sweep_bidirectional.setter
+    def sweep_bidirectional(self, value):
+        """
+        bool bi-directional sweep (double)
+        """
+        pass
+
+    @property
+    def bias(self):
+        """
+        Source value/range/values
+        """
+        pass
+
+    @bias.setter
+    def bias(self, value):
+        """
+        Source value/range/values
+        """
+        pass
+
+    @property
+    def compliance(self):
+        """
+        Compliance value
+        """
+        pass
+
+    @compliance.setter
+    def compliance(self, value):
+        """
+        Compliance value
+        """
+        pass
+
+    @property
+    def kelvin(self):
+        """
+        bool Kelvin or 4 point probe mode
+        """
+        pass
+
+    @kelvin.setter
+    def kelvin(self, value):
+        """
+        bool Kelvin or 4 point probe mode
+        """
+        pass
+
+    @property
+    def integration_time(self):
+        """
+        Integration time in seconds
+        """
+        pass
+
+    @integration_time.setter
+    def integration_time(self, value):
+        """
+        Integration time in seconds
+        """
+        pass
+
+    @property
+    def integration_time_NPLC(self):
+        """
+        Integration time in power line cycles
+        """
+        pass
+
+    @integration_time_NPLC.setter
+    def integration_time_NPLC(self, value):
+        """
+        Integration time in power line cycles
+        """
+        pass
+
+    @property
+    def sense_range(self):
+        """
+        Measurement range None = Auto
+        """
+        pass
+
+    @sense_range.setter
+    def sense_range(self, value):
+        """
+        Measurement range
+        """
+        pass
+
+    @property
+    def sense_threshold(self):
+        """
+        Threshold to auto change range in %
+        """
+        pass
+
+    @sense_threshold.setter
+    def sense_threshold(self, value):
+        """
+        Threshold to auto change range in %
+        """
+        pass
+
+    @property
+    def sense_range_auto_llim(self):
+        """
+        Minimum range to switch to for auto-ranging
+        """
+        pass
+
+    @sense_range_auto_llim.setter
+    def sense_range_auto_llim(self, value):
+        """
+        Minimum range to switch to for auto-ranging
+        """
+        pass
+
+    @property
+    def sense_range_auto_ulim(self):
+        """
+        Maximum range to switch to for auto-ranging
+        """
+        pass
+
+    @sense_range_auto_ulim.setter
+    def sense_range_auto_ulim(self, value):
+        """
+        Maximum range to switch to for auto-ranging
+        """
+        pass
+
+    @property
+    def pulse(self):
+        """
+        bool Pulsed mode
+        """
+        pass
+
+    @pulse.setter
+    def pulse(self, value):
+        """
+        bool Pulsed mode
+        """
+        pass
+
+    @property
+    def trigger_source(self):
+        """
+        source to trigger off of
+        """
+        pass
+
+    @trigger_source.setter
+    def trigger_source(self, value):
+        """
+        source to trigger off of
+        """
+        pass
+
+    @property
+    def timer_interval(self):
+        """
+        interval in seconds between internal triggers
+        """
+        pass
+
+    @timer_interval.setter
+    def timer_interval(self):
+        """
+        interval in seconds between internal triggers
+        """
+        pass
+
+    @property
+    def trigger_transition_delay(self):
+        """
+        delay time for value transition in seconds
+        """
+        pass
+
+    @trigger_transition_delay.setter
+    def trigger_transition_delay(self, value):
+        """
+        delay time for value transition in seconds
+        """
+        pass
+
+    @property
+    def trigger_aquire_delay(self):
+        """
+        delay time for measurement start in seconds
+        """
+        pass
+
+    @trigger_aquire_delay.setter
+    def trigger_aquire_delay(self, value):
+        """
+        delay time for measurement start in seconds
+        """
+        pass
+
+    @property
+    def source_wait(self):
+        """
+        wait time for source in seconds
+        """
+        pass
+
+    @source_wait.setter
+    def source_wait(self, value):
+        """
+        wait time for source in seconds
+        """
+        pass
+
+    @property
+    def sense_wait(self):
+        """
+        wait time for sense in seconds
+        """
+        pass
+
+    @sense_wait.setter
+    def sense_wait(self, value):
+        """
+        wait time for sense in seconds
+        """
+        pass
+
+    @property
+    def pulse_delay(self):
+        """
+        delay time before pulse in seconds
+        """
+        pass
+
+    @pulse_delay.setter
+    def pulse_delay(self):
+        """
+        delay time before pulse in seconds
+        """
+        pass
+
+    @property
+    def pulse_width(self):
+        """
+        pulse width in seconds
+        """
+        pass
+
+    @pulse_width.setter
+    def pulse_width(self, value):
+        """
+        pulse width in seconds
+        """
+        pass
