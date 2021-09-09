@@ -96,7 +96,7 @@ class K2400():
 
     @voltage_limit.setter
     def voltage_limit(self, value):
-        if within_limits(value, self.curr_limits):
+        if within_limits(value, self.volt_limits):
             self.inst.write("VOLT:PROT:LEV %f" % value)
         else:
             self.inst.write("VOLT:PROT:LEV %f" %
@@ -116,7 +116,7 @@ class K2400():
         else:
             self.inst.write("ROUT:TERM REAR")
 
-    def voltage_sweep(self, start, stop, points, tmeout=300.):
+    def voltage_sweep(self, start, stop, points, tmeout=3000.):
         if points < 1:
             points = 1
         elif points > 2500:

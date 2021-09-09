@@ -230,6 +230,7 @@ class SR830(LockInAmplifier):
     inst = None
     config = None
     preamps = np.array([None])
+    auto_dewll = False
 
     def __init__(self, inst):
         self.inst = inst
@@ -359,15 +360,16 @@ class SR830(LockInAmplifier):
 
     @slvl.setter
     def slvl(self, value):
+        """ Source Level """
         if within_limits(value, [0.004, 5.00]):
             self.inst.write("SLVL %0.3e" % value)
 
     @property
-    def ref_phase(self):
-        return self.inst.query_ascii_values("PHAS?")[0]
+    def phaseoff(self):
+        return np.array(self.inst.query_ascii_values("PHAS?"))
 
-    @ref_phase.setter
-    def ref_phase(self, value):
+    @phaseoff.setter
+    def phaseoff(self, value):
         if within_limits(value, [-360.0, 729.99]):
             self.inst.write("PHAS %0.2e" % value)
 
@@ -432,7 +434,7 @@ class SR830(LockInAmplifier):
     def cmags(self):
         rtn = np.array(self.inst.query_ascii_values("OUTP? 3"))
         if self.preamps[0] is not None:
-            rtn = rtn[0]*self.preamps[0].sensitivity
+            rtn = rtn*self.preamps[0].sensitivity
         return rtn
 
     def adc(self, index):
@@ -466,7 +468,7 @@ class SR830(LockInAmplifier):
         sleep(self.wait_time)
         rtn[0, 0] = self.mag
         if self.preamps[0] is not None:
-            rtn = rtn*np.preamps[0].sensitivity
+            rtn = rtn*self.preamps[0].sensitivity
         self.slope = cs
         self.time_constant = ctc
         return rtn

@@ -49,8 +49,10 @@ class PreAmp():
             curlev = -1.
         nidx = self.sensitivity_index - 1
         if nidx < 0 or self.max_output < curlev/self.senss[nidx]:
+            #print(f"nidx {nidx} curlev/self.senss[nidx] {curlev/self.senss[nidx]} self.max_output {self.max_output}")
             return np.nan
         if self.freq_cutoff(self.senss[nidx]) <= self.current_freq:
+            #print(f"freq cutoff")
             return np.nan
         return self.senss[nidx]
 
@@ -112,6 +114,7 @@ class LockInAmplifier():
     slopes = np.array([])
     noise_base = np.array([])
     noise_ratio = np.array([])
+    noise_slope = np.array([])
     tol_maxsettle = 20.
     tol_rel = np.array([])
     tol_abs = np.array([])
@@ -119,6 +122,7 @@ class LockInAmplifier():
     auto_scale = False
     auto_dewll = False
     auto_phase = False
+    auto_wait = False
     auto_phase_tc = 5.
     last_mags = np.array([])
     last_meas = np.array([])
@@ -258,13 +262,19 @@ class LockInAmplifier():
             self.last_mags = self.cmags
         scaled = False
         dwelled = False
+        waited = False
         while ((self.auto_scale and not scaled) or
-               (self.auto_dewll and not dwelled)):
+               (self.auto_dewll and not dwelled) or
+               (self.auto_wait and not waited)):
             if self.auto_scale:
-                scaled = not self.update_scale(self.last_mags)
+                tmags = self.last_mags
+                tnse = 2.*self.approx_noise(tmags)*np.sqrt(self.enbw)
+                scaled = not self.update_scale(np.vstack((tmags, tnse)).max(axis=0))
             if self.auto_dwell:
                 dwelled = not self.update_timeconstant(self.last_mags)
+            if self.auto_dewll or self.auto_wait:
                 sleep(self.wait_time)
+                waited = True
             tmp = self.cmags
             if self.auto_scale and np.any(np.abs(1.-tmp/self.last_mags) > 0.5):
                 scaled = False
@@ -287,7 +297,7 @@ class LockInAmplifier():
                     js[k] = js[k]*self.preamps[k].sensitivity/cps
                     cps = self.preamps[k].sensitivity
                     change = True
-                elif m <= 0.3*js[k]:
+                elif m <= 0.05*js[k]:
                     nps = self.preamps[k].inc_sensitivity
                     if not np.isnan(nps):
                         self.preamps[k].sensitivity = nps
@@ -398,9 +408,13 @@ class LockInAmplifier():
 
     def approx_noise(self, mags):
         """Noise approximation based on slope and baseline"""
-        return (np.vstack((
-            mags*self.noise_ratio,
-            self.noise_base)).max(axis=0))
+        if self.noise_slope.size > 0:
+            mags = np.power(mags, self.noise_slope)
+        if self.noise_ratio.size > 0:
+            mags = self.noise_ratio*mags
+        if self.noise_base.size > 0:
+            mags = np.sqrt(np.power(mags, 2)+np.power(self.noise_base, 2))
+        return mags
 
 
 class ParameterAnalyzer():
@@ -419,7 +433,9 @@ class ParameterAnalyzer():
 
 class SMU():
 
-    def __init__(self, inst, parent=None, number=None):
+    use_ascii = True
+
+    def __init__(self, inst=None, parent=None, number=None):
         pass
 
     @property
@@ -439,8 +455,11 @@ class SMU():
     @property
     def source_range(self):
         """
-        Source in voltage mode (True=Voltage, False=Current)
+        Source range (None=Auto)
         """
+
+    @source_range.setter
+    def source_range(self, value):
         pass
 
     @property
@@ -688,7 +707,7 @@ class SMU():
         """
         pass
 
-    @trigger_transition_delay(self).setter
+    @trigger_transition_delay.setter
     def trigger_transition_delay(self, value):
         """
         delay time for value transition in seconds

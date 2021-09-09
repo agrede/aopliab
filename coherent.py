@@ -22,14 +22,41 @@ class OBISMC():
     
     @property
     def source_power(self):
-        return (self.inst.query("SOUR:AM:SOUR?") == 'CWP')
+        rtn = self.inst.query("SOUR:AM:SOUR?")
+        self.inst.read_raw()
+        return (rtn == "CWP")
     
     @source_power.setter
     def source_power(self, value):
         if value:
-            self.inst.write("SOUR:AM:SOUR CWP")
+            self.write("SOUR:AM:SOUR CWP")
         else:
-            self.inst.write("SOUR:AM:SOUR CWC")
+            self.write("SOUR:AM:SOUR CWC")
+                    
+    @property
+    def power_limits(self):
+        low = self.query("SOUR:POW:LIM:LOW?")
+        high = self.query("SOUR:POW:NOM?")
+        return np.array([low[0], high[0]])
+    
+    @property
+    def power(self):
+        return (self.query("SOUR:POW:LEV:IMM:AMPL?")[0])
+    
+    @power.setter
+    def power(self, value):
+        if (within_limits(value, self.power_limits)):
+            self.write("SOUR:POW:LEV:IMM:AMPL %f" % value)
             
     @property
+    def output(self):
+        rtn = self.inst.query("SOUR:AM:STAT?")
+        self.inst.read_raw()
+        return (rtn == "ON")
     
+    @output.setter
+    def output(self, value):
+        if value:
+            self.write("SOUR:AM:STAT ON")
+        else:
+            self.write("SOUR:AM:STAT OFF")

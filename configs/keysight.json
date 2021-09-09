@@ -9,5 +9,10 @@
         "freq_range": [5.0, 1.3e7],
         "bias_range": [-35.0, 35.0],
         "osc_range": [0.005, 1.100]
+    },
+    "B2912A": {
+        "volt_ranges": [2e-1, 2e0, 2e1, 2e2],
+        "curr_ranges": [1e-8, 1e-7, 1e-6, 1e-5, 1e-4, 1e-3, 1e-2, 1e-1, 
+                        1e0, 1.5e0, 3e0, 1e1]
     }
 }

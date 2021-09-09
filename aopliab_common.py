@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import json
-import visa
+import pyvisa
 import re
 import serial as srl
 
@@ -36,11 +36,11 @@ def getSer(name, local_config='local.json'):
 def parseConnParams(params):
     if ('stop_bits' in params):
         if (params['stop_bits'] == 1):
-            params['stop_bits'] = visa.constants.StopBits.one
+            params['stop_bits'] = pyvisa.constants.StopBits.one
         elif (params['stop_bits'] == 1.5):
-            params['stop_bits'] = visa.constants.StopBits.one_and_a_half
+            params['stop_bits'] = pyvisa.constants.StopBits.one_and_a_half
         elif (params['stop_bits'] == 2):
-            params['stop_bits'] = visa.constants.StopBits.two
+            params['stop_bits'] = pyvisa.constants.StopBits.two
         else:
             del(params['stop_bits'])
     if ('read_termination' in params):
@@ -77,7 +77,6 @@ def nearest_index(value, values, rndup):
         idx = idx-1
     return k[idx]
 
-
 class DynamicPlot():
     lines = []
     error_L = []
@@ -102,11 +101,11 @@ class DynamicPlot():
             ptype = self.ptype
         if lstyle is None:
             lstyle = self.dlstyle
-        if (ptype is "loglog"):
+        if (ptype == "loglog"):
             tline, = self.ax.loglog([], [], lstyle)
-        elif (ptype is "semilogy"):
+        elif (ptype == "semilogy"):
             tline, = self.ax.semilogy([], [], lstyle)
-        elif (ptype is "semilogx"):
+        elif (ptype == "semilogx"):
             tline, = self.ax.semilogx([], [], lstyle)
         elif (ptype is "errorbar"):
             if lstyle is None:

@@ -260,7 +260,7 @@ class FW102C():
     def query(self, value):
         tmp = self.inst.query(value)
         return float(self._qrx.match(tmp).group(1))
-
+        
     def write(self, value):
         self.inst.write(value)
         self.inst.read_raw()
