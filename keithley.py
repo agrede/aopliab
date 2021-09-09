@@ -89,14 +89,18 @@ class K2400():
                             self.inst.query_ascii_values(
                                                          "CURR:PROT:LEV? DEF"
                                                          )[0])
-
+    
+    @property
+    def beep(self):
+        return self.inst.write("SYST:BEEP %f, %f" % (1000, 1.0))
+    
     @property
     def voltage_limit(self):
         return self.inst.query_ascii_values("VOLT:PROT:LEV?")[0]
 
     @voltage_limit.setter
     def voltage_limit(self, value):
-        if within_limits(value, self.curr_limits):
+        if within_limits(value, self.volt_limits):
             self.inst.write("VOLT:PROT:LEV %f" % value)
         else:
             self.inst.write("VOLT:PROT:LEV %f" %
@@ -116,7 +120,7 @@ class K2400():
         else:
             self.inst.write("ROUT:TERM REAR")
 
-    def voltage_sweep(self, start, stop, points, tmeout=300.):
+    def voltage_sweep(self, start, stop, points, tmeout=3000.):
         if points < 1:
             points = 1
         elif points > 2500:

@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import json
 import visa
 import re
-
+import serial as srl
 
 def within_limits(value, limits):
     return (value is not None and limits[0] <= value and limits[1] >= value)
@@ -29,7 +29,7 @@ def getSer(name, local_config='local.json'):
     cfg = json.load(cfg_file)
     cfg_file.close()
     
-    return srl.Serial(cfg[name]['port'], cfg[name]['baud_rate'], timeout=cfg[name]['timeout'])
+    return srl.Serial(cfg[name]['addr'], cfg[name]['conn_params']['baud_rate'], timeout=cfg[name]['conn_params']['timeout'])
 
     
 def parseConnParams(params):
@@ -67,32 +67,38 @@ def nearest_index(value, values, rndup):
         value = tvalues[0]
     elif(value > tvalues[-1]):
         value = tvalues[-1]
-    idx = np.where(value <= tvalues)[0][0]
+    try:
+        idx = np.where(value <= tvalues)[0][0]
+    except IndexError:
+        print(f"nearest_index({value}, {values})")
+        raise IndexError
     if (not rndup and value < tvalues[idx]):
         idx = idx-1
     return k[idx]
 
-
 class DynamicPlot():
-
-    lines = []
     ptype = "plot"
     dlstyle = "o-"
-
-    def __init__(self, ptype="plot", lstyle="o-"):
+    def __init__(self, ptype="plot", lstyle="o-" , fig = None, label = None, title = "title", xAxis = "x Axis", yAxis = "y Axis"):
         self.ptype = ptype
         self.dlstyle = lstyle
+        self.lines = []
         # Set up plot
-        self.figure, self.ax = plt.subplots()
-        self.addnew()
+        self.figure, self.ax = plt.subplots(figsize = (12,12), num = fig)
+        self.ax.set_title(title)
+        self.xAxis = plt.xlabel(xAxis)
+        self.yAxis = plt.ylabel(yAxis) 
+        self.addnew(label = label)
+        if label:
+            self.ax.legend()
         #Autoscale on unknown axis and known lims on the other
         self.ax.set_autoscale_on(True)
 
-    def addnew(self, ptype=None, lstyle=None):
+    def addnew(self, ptype=None, lstyle=None, label = None):
         if ptype is None:
             ptype = self.ptype
         if lstyle is None:
-            lstyle = self.dlstyle
+            lstyle = self.dlstyle   
         if (ptype is "loglog"):
             tline, = self.ax.loglog([], [], lstyle)
         elif (ptype is "semilogy"):
@@ -101,6 +107,9 @@ class DynamicPlot():
             tline, = self.ax.semilogx([], [], lstyle)
         else:
             tline, = self.ax.plot([], [], lstyle)
+        if label:
+            tline.set_label(label)
+            self.ax.legend()
         self.lines.append(tline)
 
     def update(self, newx, newy):
@@ -165,3 +174,14 @@ def json_load(path):
     tmp = json.load(fp)
     fp.close()
     return tmp
+
+
+def twos_complement(n, nbits=32):
+    """
+    2's complement and its inverse
+    """
+    if n < 0:
+        n += (1 << nbits)
+    elif n & (1 << (nbits - 1)) != 0:
+        n -= (1 << nbits)
+    return n
