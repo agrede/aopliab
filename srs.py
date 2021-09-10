@@ -1,11 +1,13 @@
 import json
 import numpy as np
-from aopliab_common import within_limits, nearest_index, get_bool, set_bool
+from aopliab.aopliab_common import within_limits, nearest_index
+from aopliab.aopliab_common import get_bool, set_bool
+from aopliab.geninst import PreAmp, LockInAmplifier
 import numpy.ma as ma
 from scipy.interpolate import interp1d
-from geninst import PreAmp, LockInAmplifier
 from time import sleep
 import weakref
+
 
 class SR570(PreAmp):
     """
@@ -524,13 +526,13 @@ class DS345():
 
     def cls(self):
         self.inst.write("*CLS")
-        
+
     def triger(self):
         self.inst.write("*TRG")
 
     def triger(self):
         self.inst.write("*TRG")
-        
+
     @property
     def highz(self):
         return (self._highz > 1.)

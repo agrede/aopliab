@@ -1,5 +1,5 @@
 import numpy as np
-import aopliab_common as ac
+import aopliab.aopliab_common as ac
 import visa
 from time import sleep, time
 import matplotlib.pyplot as plt
@@ -45,7 +45,7 @@ ys = np.arange(tmp['arr_5'][1, 1], tmp['arr_5'][1, 0]-10, -10)
 
 
 def readPos():
-    return np.array([int(ax.send("get pos").data), 
+    return np.array([int(ax.send("get pos").data),
                      int(ay.send("get pos").data),
                     int(az.send("get pos").data)])
 
@@ -67,14 +67,14 @@ def dropProbes():
     (x, y, z) = readPos()
     z = int(zpos(x, y))
     az.move_abs(z)
-    
-    
+
+
 def movebnds(n):
     ax.move_abs(int(bnds[n, 0]))
     ay.move_abs(int(bnds[n, 1]))
     dropProbes()
-    
-    
+
+
 np.savez_compressed(svepth+"points.npz", xs, ys)
 
 p = ac.DynamicPlot()

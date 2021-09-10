@@ -1,6 +1,6 @@
 import re
-from aopliab_common import within_limits, json_load, get_bool, set_bool
-from geninst import ParameterAnalyzer, SMU
+from aopliab.aopliab_common import within_limits, json_load, get_bool, set_bool
+from aopliab.geninst import ParameterAnalyzer, SMU
 import numpy as np
 import weakref
 from time import time

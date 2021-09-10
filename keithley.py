@@ -89,11 +89,11 @@ class K2400():
                             self.inst.query_ascii_values(
                                                          "CURR:PROT:LEV? DEF"
                                                          )[0])
-    
+
     @property
     def beep(self):
         return self.inst.write("SYST:BEEP %f, %f" % (1000, 1.0))
-    
+
     @property
     def voltage_limit(self):
         return self.inst.query_ascii_values("VOLT:PROT:LEV?")[0]
@@ -592,8 +592,8 @@ class K237():
         self.config = cfg['K237']
         self.measure_parameters()
         self.machine_status()
-        
-        
+
+
     def machine_status(self):
         """
         Query Status Variables
@@ -618,8 +618,8 @@ class K237():
         self._trigger_out_sweep_end = tmp[29] == '1'
         self._high_voltage_enabled = tmp[31] == '1'
         return True
-        
-    
+
+
     def measure_parameters(self):
         tmp = self.inst.query("U4X")
         # 000000000011111111112
@@ -636,7 +636,7 @@ class K237():
         self._integration_time = self.config['integration_times'][int(tmp[16])]
         self._default_delay = tmp[18] == '1'
         self._suppression = tmp[20] == '1'
-        
+
     @property
     def measure(self):
         if self._sweep_mode:
@@ -651,14 +651,14 @@ class K237():
                 elif val[4] == 'I':
                     i = float(val[5:])
         return np.array([v, i])
-    
+
     @property
     def sweep_mode(self):
         if self.measure_parameters():
             return self._sweep_mode
         else:
             return None
-        
+
     @sweep_mode.setter
     def sweep_mode(self, value):
         if value:
@@ -675,14 +675,14 @@ class K237():
             else:
                 self.inst.write("F1,0X")
             self._sweep_mode = False
-    
+
     @property
     def source_voltage(self):
         if self.measure_parameters():
             return self._sweep_mode
         else:
             return None
-    
+
     @source_voltage.setter
     def source_voltage(self, value):
         if value:
@@ -697,14 +697,14 @@ class K237():
             else:
                 self.inst.write("F1,0X")
             self._source_voltage = False
-            
+
     @property
     def high_voltage_enabled(self):
         if self.machine_status():
             return self._high_voltage_enabled
         else:
             return None
-        
+
     @high_voltage_enabled.setter
     def high_voltage_enabled(self, value):
         if value:
@@ -713,7 +713,7 @@ class K237():
         else:
             self.inst.write("V0X")
             self._high_voltage_enabled = False
-        
+
     @property
     def bias(self):
         if self._sweep_mode:
@@ -723,34 +723,34 @@ class K237():
             return v
         else:
             return i
-        
+
     @bias.setter
     def bias(self, value):
         if self._source_voltage and within_limits(value, [-1100., 1100.]):
             self.inst.write("B{:0.4E},0,0X".format(value))
         elif not self._source_voltage and within_limits(value, [-100e-3, 100e-3]):
             self.inst.write("B{:04E},0,0X")
-    
-            
+
+
     @property
     def compliance(self):
         tmp = self.inst.query("U5X")
         return float(tmp[3:])
-    
+
     @compliance.setter
     def compliance(self, value):
         if self._source_voltage and within_limits(value, [1e-12, 100e-3]):
             self.inst.write("L{:0.4E},0".format(value))
         elif not self._source_voltage and within_limits(value, [1e-3, 1100.]):
             self.inst.write("L{:0.4E},0".format(value))
-        
+
     @property
     def output_enable(self):
         if self.machine_status():
             return self._output_enable
         else:
             return None
-        
+
     @output_enable.setter
     def output_enable(self, value):
         if value:

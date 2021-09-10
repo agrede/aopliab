@@ -1,4 +1,4 @@
-from aopliab_common import within_limits, json_load, twos_complement
+from aopliab.aopliab_common import within_limits, json_load, twos_complement
 import json
 import numpy as np
 import re

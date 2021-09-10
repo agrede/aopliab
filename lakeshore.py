@@ -1,4 +1,4 @@
-from aopliab_common import within_limits
+from aopliab.aopliab_common import within_limits
 
 
 class LKS335():

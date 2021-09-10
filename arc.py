@@ -1,6 +1,6 @@
 from ctypes import *
 import numpy as np
-from aopliab_common import within_limits
+from aopliab.aopliab_common import within_limits
 
 
 class SpecPro():
