@@ -2,6 +2,10 @@ import re
 from aopliab.aopliab_common import within_limits, json_load, get_limits
 import numpy as np
 import time
+import os
+
+
+PKGPTH = os.path.dirname(__file__)+"/"
 
 
 class K2400():
@@ -245,7 +249,7 @@ class K6430():
 
     def __init__(self, inst):
         self.inst = inst
-        cfg = json_load("configs/keithley.json")
+        cfg = json_load(PKGPTH+"configs/keithley.json")
         self.config = cfg['K6430']
 
     @property
@@ -588,7 +592,7 @@ class K237():
 
     def __init__(self, inst):
         self.inst = inst
-        cfg = json_load("configs/keithley.json")
+        cfg = json_load(PKGPTH+"configs/keithley.json")
         self.config = cfg['K237']
         self.measure_parameters()
         self.machine_status()

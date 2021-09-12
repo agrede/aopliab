@@ -8,6 +8,9 @@ import os
 from datetime import datetime, timezone
 
 
+PKGPTH = os.path.dirname(__file__)+"/"
+
+
 def within_limits(value, limits):
     """
     checks if value contained by limits
@@ -24,7 +27,7 @@ def within_limits(value, limits):
     return (value is not None and limits[0] <= value and limits[1] >= value)
 
 
-def getInstr(rm, name, local_config='local.json'):
+def getInstr(rm, name, local_config=PKGPTH+'local.json'):
     """
     Get pyvisa object for instrument as specified in configuration file
 
@@ -56,7 +59,7 @@ def getInstr(rm, name, local_config='local.json'):
     return rm.open_resource(cfg[name]['addr'], **conn_params)
 
 
-def getSer(name, local_config='local.json'):
+def getSer(name, local_config=PKGPTH+'local.json'):
     """Load a serial object"""
     cfg_file = open(local_config)
     cfg = json.load(cfg_file)
@@ -372,7 +375,7 @@ def twos_complement(n, nbits=32):
     return n
 
 
-def save_path(user, subfolder=None, utc=False, local_config='local.json'):
+def save_path(user, subfolder=None, utc=False, local_config=PKGPTH+'local.json'):
     """
     Create current date directory in user's sub-folder
 

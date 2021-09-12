@@ -9,6 +9,9 @@ from time import sleep
 import weakref
 
 
+PKGPTH = os.path.dirname(__file__)+"/"
+
+
 class SR570(PreAmp):
     """
     PyVISA wrapper for SRS SR570 Transimpedance amplifier
@@ -34,7 +37,7 @@ class SR570(PreAmp):
     def __init__(self, inst):
         self.inst = inst
         self.inst.write("*RST")
-        cfg_file = open("configs/srs.json")
+        cfg_file = open(PKGPTH+"configs/srs.json")
         cfg = json.load(cfg_file)
         cfg_file.close()
         self.config = cfg['SR570']
@@ -236,7 +239,7 @@ class SR830(LockInAmplifier):
 
     def __init__(self, inst):
         self.inst = inst
-        cfg_file = open("configs/srs.json")
+        cfg_file = open(PKGPTH+"configs/srs.json")
         cfg = json.load(cfg_file)
         cfg_file.close()
         self.config = cfg['SR830']
@@ -514,7 +517,7 @@ class DS345():
 
     def __init__(self, inst):
         self.inst = inst
-        cfg_file = open("configs/srs.json")
+        cfg_file = open(PKGPTH+"configs/srs.json")
         cfg = json.load(cfg_file)
         cfg_file.close()
         self.config = cfg['DS345']
@@ -640,7 +643,7 @@ class DG645():
 
     def __init__(self, inst):
         self.inst = inst
-        cfg_file = open("configs/srs.json")
+        cfg_file = open(PKGPTH+"configs/srs.json")
         cfg = json.load(cfg_file)
         cfg_file.close()
         self.config = cfg['DG645']

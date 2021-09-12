@@ -6,6 +6,10 @@ from aopliab.arc import SpecPro
 from time import sleep
 import scipy.constants as PC
 from aopliab.aopliab_common import json_load, getInstr
+import os
+
+
+PKGPTH = os.path.dirname(__file__)+"/"
 
 
 def altIfNan(xs):
@@ -92,7 +96,7 @@ def set_response(paths):
     pass
 
 
-def get_pds(cal_file="calibrations.json"):
+def get_pds(cal_file=PKGPTH+"calibrations.json"):
     cal = json_load(cal_file)
     pds = cal['PhotoDiodes']
     for mod, pdm in pds.items():
@@ -129,7 +133,7 @@ def get_lia(rm, name="LockInAmp"):
 
 
 def get_filters():
-    lc = json_load("local.json")
+    lc = json_load(PKGPTH+"local.json")
     return lc['FilterWheel']['filters']
 
 

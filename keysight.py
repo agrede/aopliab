@@ -5,6 +5,10 @@ import numpy as np
 import weakref
 from time import time
 from numbers import Number
+import os
+
+
+PKGPTH = os.path.dirname(__file__)+"/"
 
 
 class HP4192A():
@@ -25,7 +29,7 @@ class HP4192A():
 
     def __init__(self, inst):
         self.inst = inst
-        cfg = json_load("configs/keysight.json")
+        cfg = json_load(PKGPTH+"configs/keysight.json")
         self.config = cfg['HP4192A']
         self.freq_range = np.array(self.config['freq_range'])
         self.bias_range = np.array(self.config['bias_range'])
@@ -102,7 +106,7 @@ class InfiniiVision5000():
     def __init__(self, inst):
         self.inst = inst
         #self.inst.write("*RST; *CLS")
-        cfg = json_load('configs/keysight.json')
+        cfg = json_load(PKGPTH+'configs/keysight.json')
         self.config = cfg['InfiniiVision5000']
         self.chan_range = self.config['chan_range']
         self.wave_source = 1

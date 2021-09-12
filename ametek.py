@@ -7,6 +7,10 @@ from aopliab.geninst import LockInAmplifier
 import numpy.ma as ma
 from pyvisa.util import from_ascii_block
 from pyvisa.constants import VI_SUCCESS_MAX_CNT
+import os
+
+
+PKGPTH = os.path.dirname(__file__)+"/"
 
 
 class SR7230(LockInAmplifier):
@@ -21,7 +25,7 @@ class SR7230(LockInAmplifier):
 
     def __init__(self, inst):
         self.inst = inst
-        cfg_file = open("configs/ametek.json")
+        cfg_file = open(PKGPTH+"configs/ametek.json")
         cfg = json.load(cfg_file)
         cfg_file.close()
         self.config = cfg['SR7230']
