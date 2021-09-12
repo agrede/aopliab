@@ -1,13 +1,11 @@
-import visa
 import numpy as np
-import matplotlib.pyplot as plt
 from scipy.interpolate import interp1d
-from srs import SR570
-from ametek import SR7230
-from arc import SpecPro
-from time import sleep, time
+from aopliab.srs import SR570
+from aopliab.ametek import SR7230
+from aopliab.arc import SpecPro
+from time import sleep
 import scipy.constants as PC
-from aopliab_common import DynamicPlot, json_write, json_load, getInstr
+from aopliab.aopliab_common import json_load, getInstr
 
 
 def altIfNan(xs):
