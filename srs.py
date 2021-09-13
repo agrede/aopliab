@@ -7,7 +7,7 @@ import numpy.ma as ma
 from scipy.interpolate import interp1d
 from time import sleep
 import weakref
-
+import os
 
 PKGPTH = os.path.dirname(__file__)+"/"
 
