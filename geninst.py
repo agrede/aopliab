@@ -1,6 +1,6 @@
 import numpy as np
 import numpy.ma as ma
-from aopliab.aopliab.aopliab_common import within_limits, nearest_index
+from aopliab.aopliab_common import within_limits, nearest_index
 from time import sleep
 
 

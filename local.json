@@ -1,5 +1,5 @@
 {
-    "data_path": "C:/Users/Maxwell/Desktop/Student Data/",
+    "data_path": "C:/Users/streak camera/Desktop/Student Data/",
     "Monochromator": {
         "manufacturer": "ARC",
         "model": "SpecPro",
@@ -21,12 +21,12 @@
     "FuncGen": {
         "manufacturer": "SRS",
         "model": "DS345",
-        "addr": "GPIB0::19::INSTR"
+        "addr": "GPIB1::19::INSTR"
     },
     "DelayGen": {
         "manufacturer": "SRS",
         "model": "DG645",
-        "addr": "GPIB0::17::INSTR"
+        "addr": "GPIB1::17::INSTR"
     },
     "LockInAmp": {
         "manufacturer": "Ametek",
@@ -41,31 +41,36 @@
     "CryoTemp": {
         "manufacturer": "Lakeshore",
         "model": "LKS355",
-        "addr": "GPIB0::12::INSTR"
+        "addr": "GPIB1::12::INSTR"
     },
     "SMU": {
         "manufacturer": "Keithely",
         "model": "K2400",
-        "addr": "GPIB0::22::INSTR"
+        "addr": "GPIB1::22::INSTR"
     },
-	"SMU2": {
+    "SMU2": {
         "manufacturer": "Keithely",
         "model": "K2400",
-        "addr": "GPIB0::21::INSTR"
+        "addr": "GPIB1::21::INSTR"
+    },
+    "SMUHV": {
+        "manufacturer": "Keithely",
+        "model": "K2400",
+        "addr": "GPIB1::10::INSTR",
+        "conn_params": {
+            "read_termination": ["<CR>","<LF>"],
+            "write_termination": ["<CR>","<LF>"]
+        }
     },
     "PulSMU": {
         "manufacturer": "Keysight",
         "model": "B2900A",
-        "addr": "USB0::0x0957::0x8E18::MY51141103::INSTR",
-        "conn_params": {
-            "read_termination": ["<LF>"],
-            "write_termination": ["<LF>"]
-        }
+        "addr": "USB0::0x0957::0x8E18::MY51141103::INSTR"
     },
     "SPA": {
         "manufacturer": "HP",
         "model": "HP4145B",
-        "addr": "GPIB0::14::INSTR",
+        "addr": "GPIB1::14::INSTR",
         "conn_params": {
             "read_termination": ["<CR>","<LF>"],
             "write_termination": ["<CR>","<LF>"]
@@ -74,7 +79,7 @@
     "LasPow": {
         "manufacturer": "Keithely",
         "model": "K2400",
-        "addr": "GPIB0::30::INSTR"
+        "addr": "GPIB1::30::INSTR"
     },
     "IRLaser": {
         "manufacturer": "Thorlabs",
@@ -84,7 +89,7 @@
     "PAM": {
         "manufacturer": "Keithely",
         "model": "K2400",
-        "addr": "GPIB0::15::INSTR"
+        "addr": "GPIB1::15::INSTR"
     },
     "OpticalChopper": {
         "manufacturer": "Thorlabs",
@@ -139,6 +144,19 @@
             [null, null, null, null, null]
         ]
     },
+    "varND": {
+        "manufacturer": "Thorlabs",
+        "model": "ELL20",
+        "addr": "ASRL29::INSTR",
+        "conn_params": {
+            "timeout": 30000,
+            "baud_rate": 9600,
+            "data_bits": 8,
+            "stop_bits": 1,
+            "write_termination": ["<LF>"],
+            "read_termination": ["<CR>", "<LF>"]
+        }
+    },
     "OScope": {
         "manufacturer": "Keysight",
         "model": "DSO5014A",
@@ -152,17 +170,17 @@
     "SfA": {
         "manufacturer": "Keithely",
         "model": "K6430",
-        "addr": "GPIB0::18::INSTR"
+        "addr": "GPIB1::18::INSTR"
     },
     "SRSLockin": {
         "manufacturer": "SRS",
         "model": "SR830",
-        "addr": "GPIB0::1::INSTR"
+        "addr": "GPIB1::1::INSTR"
     },
     "ArdMeg": {
         "manufacturer": "ArdMeg",
         "model": "ArdMeg",
-        "addr": "ASRL32::INSTR",
+        "addr": "ASRL31::INSTR",
         "conn_params": {
             "baud_rate": 9600,
             "data_bits": 8,
@@ -281,11 +299,11 @@
     "ImpAn": {
         "manufacturer": "HP",
         "model": "HP4192A",
-        "addr": "GPIB0::18::INSTR"
+        "addr": "GPIB1::18::INSTR"
     },
     "DCSupply": {
         "manufacturer": "HP",
         "model": "E3640A",
-        "addr": "GPIB0::5::INSTR"
+        "addr": "GPIB1::5::INSTR"
     }
 }
