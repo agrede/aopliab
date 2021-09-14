@@ -177,7 +177,7 @@ class CLD1015():
 
     @property
     def current_mode(self):
-        return (self.query("SOUR:FUNC?") is "CURR\n")
+        return (self.query("SOUR:FUNC?") == "CURR\n")
 
     @current_mode.setter
     def current_mode(self, value):

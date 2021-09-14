@@ -1,11 +1,15 @@
 {
-    "data_path": "C:/Users/Maxwell/Desktop/Student Data/",
     "Monochromator": {
-        "manufacturer": "ARC",
-        "model": "SpecPro",
-        "com": 70,
-        "dll_path": "C:\\Program Files (x86)\\Princeton Instruments\\MonoControl\\ARC_SpectraPro.dll",
-        "non_visa": true
+        "manufacturer": "princeton",
+        "model": "SP2150",
+        "addr": "ASRL70::INSTR",
+        "conn_params": {
+            "baud_rate": 9600,
+            "data_bits": 8,
+            "stop_bits": 1,
+            "read_termination": ["<CR>", "<LF>"],
+            "write_termination": ["<CR>"]
+        }
     },
     "TransImpedanceAmp": {
         "manufacturer": "SRS",

@@ -2,7 +2,7 @@ import numpy as np
 from scipy.interpolate import interp1d
 from aopliab.srs import SR570
 from aopliab.ametek import SR7230
-from aopliab.arc import SpecPro
+from aopliab.princeton import SP2150
 from time import sleep
 import scipy.constants as PC
 from aopliab.aopliab_common import json_load, getInstr
@@ -118,8 +118,8 @@ def merge_meas(dtaold, dtanew, idx):
 
 
 def get_mono(rm, name="Monochromator"):
-    (com, dll) = getInstr(rm, name)
-    return SpecPro(com, dll)
+    monoi = getInstr(rm, name)
+    return SP2150(monoi)
 
 
 def get_tia(rm, name="TransImpedanceAmp"):
